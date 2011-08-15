@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  ~ Copyright (c) 2011 Zodiac Interactive, LLC. All Rights Reserved.
+  -->
+
+<project name="RobocodeServer" basedir="."
+         default="compile-server">
+    <property file="build.properties"/>
+    <property name="robot.version" value="3.15.155"/>
+
+    <path id="src.files">
+        <pathelement location="src"/>
+    </path>
+
+    <target name="init">
+        <mkdir dir="${bin.dir}"/>
+    </target>
+
+    <target name="compile-server" depends="init" description="Compiles source files">
+
+        <javac destdir="${bin.dir}" debug="on" debuglevel="lines,vars,source" optimize="yes" target="7">
+            <src refid="src.files"/>
+
+            <classpath>
+                <pathelement location="${robocode.jar}"/>
+            </classpath>
+        </javac>
+
+    </target>
+
+    <target name="generate-wsdl" depends="compile-server">
+        <exec executable="C:\Program Files\Java\jdk1.7.0\bin\wsgen.exe">
+            <arg line="-wsdl -d ./bin -s src -cp ./bin;./rc/libs/robocode.jar ru.jdev.rc.drc.server.RobocodeServer"/>
+        </exec>
+    </target>
+
+    <target name="generate-ports" depends="generate-wsdl">
+        <delete dir="${port.bin.dir}"/>
+        <mkdir dir="${port.bin.dir}"/>
+
+        <exec executable="C:\Program Files\Java\jdk1.7.0\bin\wsimport.exe">
+            <arg line="-d ${port.bin.dir} ${bin.dir}\RobocodeServerService.wsdl"/>
+        </exec>
+    </target>
+
+    <target name="clean" description="Deletes all previous build artifacts">
+        <delete dir="${bin.dir}"/>
+    </target>
+
+</project>

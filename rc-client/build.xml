@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  ~ Copyright (c) 2011 Zodiac Interactive, LLC. All Rights Reserved.
+  -->
+
+<project name="RobocodeClient" basedir="."
+         default="compile-server">
+    <property file="build.properties"/>
+
+    <path id="src.files">
+        <pathelement location="src"/>
+    </path>
+
+    <target name="init">
+        <mkdir dir="${bin.dir}"/>
+    </target>
+
+    <target name="clean" description="Deletes all previous build artifacts">
+        <delete dir="${bin.dir}"/>
+    </target>
+
+</project>
