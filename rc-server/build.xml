@@ -7,7 +7,6 @@
 <project name="RobocodeServer" basedir="."
          default="compile-server">
     <property file="build.properties"/>
-    <property name="robot.version" value="3.15.155"/>
 
     <path id="src.files">
         <pathelement location="src"/>
@@ -30,8 +29,8 @@
     </target>
 
     <target name="generate-wsdl" depends="compile-server">
-        <exec executable="C:\Program Files\Java\jdk1.7.0\bin\wsgen.exe">
-            <arg line="-wsdl -d ./bin -s src -cp ./bin;./rc/libs/robocode.jar ru.jdev.rc.drc.server.RobocodeServer"/>
+        <exec executable="${project.java.home}\bin\wsgen.exe">
+            <arg line="-wsdl -d ./bin -cp ./bin;../rc/libs/robocode.jar ru.jdev.rc.drc.server.RobocodeServer"/>
         </exec>
     </target>
 
@@ -39,9 +38,19 @@
         <delete dir="${port.bin.dir}"/>
         <mkdir dir="${port.bin.dir}"/>
 
-        <exec executable="C:\Program Files\Java\jdk1.7.0\bin\wsimport.exe">
+        <exec executable="${project.java.home}\bin\wsimport.exe">
             <arg line="-d ${port.bin.dir} ${bin.dir}\RobocodeServerService.wsdl"/>
         </exec>
+
+        <jar destfile="${ports.jar}" compress="true">
+            <fileset dir="${port.bin.dir}"/>
+        </jar>
+
+        <delete dir="${port.bin.dir}"/>
+
+        <copy todir="${rc.client.home}\libs\">
+            <fileset file="${ports.jar}"/>
+        </copy>
     </target>
 
     <target name="clean" description="Deletes all previous build artifacts">
