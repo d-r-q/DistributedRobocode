@@ -46,15 +46,16 @@
             <fileset dir="${port.bin.dir}"/>
         </jar>
 
-        <delete dir="${port.bin.dir}"/>
-
         <copy todir="${rc.client.home}\libs\">
             <fileset file="${ports.jar}"/>
         </copy>
+
+        <antcall target="clean"/>
     </target>
 
     <target name="clean" description="Deletes all previous build artifacts">
         <delete dir="${bin.dir}"/>
+        <delete dir="${port.bin.dir}"/>
     </target>
 
 </project>
