@@ -1,0 +1,13 @@
+Test chellenge
+PERCENT_SCORE
+35 rounds
+
+Group1 {
+	sample.Corners 1.0
+	sample.Walls 1.0
+}
+
+Group2 {
+   sample.Crazy 1.0
+   sample.Fire 1.0
+}

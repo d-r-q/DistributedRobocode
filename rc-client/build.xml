@@ -9,12 +9,11 @@
     </path>
 
     <target name="init">
+        <delete dir="${bin.dir}"/>
         <mkdir dir="${bin.dir}"/>
     </target>
 
     <target name="compile-client" depends="init" description="Compiles source files">
-
-        <echo>${libs.server.ports.jar}</echo>
 
         <javac destdir="${bin.dir}" debug="on" debuglevel="lines,vars,source" optimize="yes" target="7">
             <src refid="src.files"/>
@@ -46,7 +45,15 @@
             <fileset file="${libs.server.ports.jar}"/>
         </copy>
 
-        <echo file="${rc.client.build.dir}\rc-client.bat">"${project.java.home}\bin\java" -cp "rc-client.jar;libs\rc-server-ports.jar" ru.jdev.rc.drc.client.RobocodeClient
+        <copy todir="${rc.client.build.dir}\challenges">
+            <fileset dir="challenges"/>
+        </copy>
+
+        <copy todir="${rc.client.build.dir}\robots">
+            <fileset dir="robots"/>
+        </copy>
+
+        <echo file="${rc.client.build.dir}\rc-client.bat">"${project.java.home}\bin\java" -cp "rc-client.jar;libs\rc-server-ports.jar" ru.jdev.rc.drc.client.RobocodeClient "sample.RamFire 1.0" test_challenge.rrc 2
         </echo>
     </target>
 
