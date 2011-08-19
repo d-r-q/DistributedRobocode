@@ -1,11 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!--
-  ~ Copyright (c) 2011 Zodiac Interactive, LLC. All Rights Reserved.
-  -->
-
 <project name="RobocodeClient" basedir="."
-         default="compile-server">
+         default="compile-client">
     <property file="build.properties"/>
 
     <path id="src.files">
@@ -14,6 +10,44 @@
 
     <target name="init">
         <mkdir dir="${bin.dir}"/>
+    </target>
+
+    <target name="compile-client" depends="init" description="Compiles source files">
+
+        <echo>${libs.server.ports.jar}</echo>
+
+        <javac destdir="${bin.dir}" debug="on" debuglevel="lines,vars,source" optimize="yes" target="7">
+            <src refid="src.files"/>
+
+            <classpath>
+                <pathelement location="${libs.server.ports.jar}"/>
+            </classpath>
+        </javac>
+
+    </target>
+
+    <target name="archive-client" depends="compile-client">
+        <jar destfile="${builds.dir}\rc-client.jar" compress="true">
+            <fileset dir="${bin.dir}"/>
+        </jar>
+    </target>
+
+
+    <target name="build-client" depends="archive-client">
+        <delete dir="${rc.client.build.dir}"/>
+        <mkdir dir="${rc.client.build.dir}"/>
+
+        <copy todir="${rc.client.build.dir}">
+            <fileset file="${builds.dir}\rc-client.jar"/>
+        </copy>
+
+        <mkdir dir="${rc.client.build.dir}\libs"/>
+        <copy todir="${rc.client.build.dir}\libs">
+            <fileset file="${libs.server.ports.jar}"/>
+        </copy>
+
+        <echo file="${rc.client.build.dir}\rc-client.bat">"${project.java.home}\bin\java" -cp "rc-client.jar;libs\rc-server-ports.jar" ru.jdev.rc.drc.client.RobocodeClient
+        </echo>
     </target>
 
     <target name="clean" description="Deletes all previous build artifacts">
