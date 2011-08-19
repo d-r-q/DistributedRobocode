@@ -25,6 +25,7 @@ public class RobocodeServer {
 
     private BattleRequestsQueue battleRequestsQueue;
     private BattleResultsBuffer battleResultsBuffer;
+    private final BattleRequestQueueProcessor processor;
 
     private final Object brsLock = new Object();
     private int battleRequestsSequence = 0;
@@ -34,7 +35,7 @@ public class RobocodeServer {
         battleRequestsQueue = new BattleRequestsQueue("token");
         battleResultsBuffer = new BattleResultsBuffer();
         final RCBattlesExecutor executor = new RCBattlesExecutor();
-        final BattleRequestQueueProcessor processor = new BattleRequestQueueProcessor(battleRequestsQueue, executor, codeManager, battleResultsBuffer);
+        processor = new BattleRequestQueueProcessor(battleRequestsQueue, executor, codeManager, battleResultsBuffer);
         Executors.newSingleThreadExecutor().execute(processor);
     }
 
@@ -71,9 +72,26 @@ public class RobocodeServer {
         return battleResultsBuffer.getResults(battleRequestId);
     }
 
-    public static void main(String[] args) {
-        Endpoint.publish("http://localhost:19861/RS", new RobocodeServer());
+    public static void main(String[] args) throws IOException {
+        final RobocodeServer server = new RobocodeServer();
+        final Endpoint endpoint = Endpoint.publish("http://localhost:19861/RS", server);
         System.out.println("Endpoint published");
+        System.out.println("Type \"exit\" to exit");
+
+        byte[] buffer = new byte[256];
+        int len;
+
+        int lineSeparatorLength = System.getProperty("line.separator").length();
+        do {
+            len = System.in.read(buffer);
+            if (len > lineSeparatorLength && new String(buffer, 0, len - lineSeparatorLength).equalsIgnoreCase("exit")) {
+                System.out.println("Stopping queue processor");
+                server.processor.stop();
+                System.out.println("Stopping end point");
+                endpoint.stop();
+                break;
+            }
+        } while (true);
     }
 
 }
