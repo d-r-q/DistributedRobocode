@@ -53,6 +53,26 @@
         <antcall target="clean"/>
     </target>
 
+    <target name="archive-server" depends="compile-server">
+        <jar destfile="${builds.dir}\rc-server.jar" compress="true">
+            <fileset dir="${bin.dir}"/>
+        </jar>
+    </target>
+
+
+    <target name="build-server" depends="archive-server">
+        <delete dir="${rc.server.build.dir}"/>
+        <mkdir dir="${rc.server.build.dir}"/>
+
+        <copy todir="${rc.server.build.dir}">
+            <fileset file="${builds.dir}\rc-server.jar"/>
+        </copy>
+
+        <copy todir="${rc.server.build.dir}\rc">
+            <fileset dir="${robocode.dir}"/>
+        </copy>
+    </target>
+
     <target name="clean" description="Deletes all previous build artifacts">
         <delete dir="${bin.dir}"/>
         <delete dir="${port.bin.dir}"/>
