@@ -25,25 +25,37 @@ public class BattleRequestQueueProcessor implements Runnable {
 
     public void run() {
         while (isRunned && !Thread.interrupted()) {
+            final BattleRequest request;
             try {
-                final BattleRequest request = battleRequestsQueue.getBattleRequest(100);
-                if (request == null) {
-                    continue;
-                }
+                request = battleRequestsQueue.getBattleRequest(100);
+            } catch (InterruptedException e) {
+                isRunned = false;
+                continue;
+            }
+            if (request == null) {
+                continue;
+            }
 
-                for (Competitor competitor : request.competitors) {
-                    try {
-                        codeManager.loadCompetitor(competitor);
-                    } catch (IOException e) {
-                        request.state = BattleRequestState.REJECTED;
-                    }
-                }
+            try {
+                loadCompetitors(request);
                 request.state = BattleRequestState.EXECUTING;
                 final RSBattleResults rsBattleResults = rcBattlesExecutor.executeBattle(request.competitors, request.bfSpec, request.rounds);
                 request.state = BattleRequestState.EXECUTED;
                 battleResultsBuffer.addBattleResult(request.getRequestId(), rsBattleResults);
-            } catch (InterruptedException e) {
-                isRunned = false;
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                codeManager.cleanup();
+            }
+        }
+    }
+
+    private void loadCompetitors(BattleRequest request) {
+        for (Competitor competitor : request.competitors) {
+            try {
+                codeManager.loadCompetitor(competitor);
+            } catch (IOException e) {
+                request.state = BattleRequestState.REJECTED;
             }
         }
     }

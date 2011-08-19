@@ -68,8 +68,7 @@
             <fileset dir="${robocode.dir}"/>
         </copy>
 
-        <echo file="${rc.server.build.dir}\rc-server.bat">"${project.java.home}\bin\java" -cp "rc-server.jar;rc\libs\robocode.jar" ru.jdev.rc.drc.server.RobocodeServer
-        </echo>
+        <echo file="${rc.server.build.dir}\rc-server.bat">"${project.java.home}\bin\java" -cp "rc-server.jar;rc\libs\robocode.jar" ru.jdev.rc.drc.server.RobocodeServer localhost 19861 authToken</echo>
     </target>
 
     <target name="clean" description="Deletes all previous build artifacts">

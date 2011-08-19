@@ -30,13 +30,18 @@ public class RobocodeServer {
     private final Object brsLock = new Object();
     private int battleRequestsSequence = 0;
 
-    public RobocodeServer() {
+    public RobocodeServer(String authToken) {
         // todo(zhidkov): set token
-        battleRequestsQueue = new BattleRequestsQueue("token");
+        battleRequestsQueue = new BattleRequestsQueue(authToken);
         battleResultsBuffer = new BattleResultsBuffer();
         final RCBattlesExecutor executor = new RCBattlesExecutor();
         processor = new BattleRequestQueueProcessor(battleRequestsQueue, executor, codeManager, battleResultsBuffer);
         Executors.newSingleThreadExecutor().execute(processor);
+    }
+
+    @WebMethod
+    public boolean hasCompetitor(Competitor competitor) {
+        return codeManager.hasCompetitor(competitor);
     }
 
     @WebMethod
@@ -73,8 +78,8 @@ public class RobocodeServer {
     }
 
     public static void main(String[] args) throws IOException {
-        final RobocodeServer server = new RobocodeServer();
-        final Endpoint endpoint = Endpoint.publish("http://localhost:19861/RS", server);
+        final RobocodeServer server = new RobocodeServer(args[2]);
+        final Endpoint endpoint = Endpoint.publish(String.format("http://%s:%s/RS", args[0], args[1]), server);
         System.out.println("Endpoint published");
         System.out.println("Type \"exit\" to exit");
 

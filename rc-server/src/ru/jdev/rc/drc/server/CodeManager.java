@@ -19,33 +19,41 @@ public class CodeManager {
             return;
         }
         long startTime = System.currentTimeMillis();
-        final JarInputStream jis = new JarInputStream(new ByteArrayInputStream(competitor.code));
-        JarEntry e;
-        while ((e = jis.getNextJarEntry()) != null) {
-            String eName = e.getName();
-            int idx = eName.lastIndexOf("/");
+        try (
+                final JarInputStream jis = new JarInputStream(new ByteArrayInputStream(competitor.code));
+        ) {
+            JarEntry e;
+            while ((e = jis.getNextJarEntry()) != null) {
+                String eName = e.getName();
+                int idx = eName.lastIndexOf("/");
 
-            final File dir = new File(competitorCodeDir.getAbsolutePath() + File.separator + eName.substring(0, idx));
-            if (!dir.exists()) {
-                if (!dir.mkdirs()) {
-                    throw new java.io.IOException("Cannot create dir " + dir.getCanonicalPath());
+                final File dir = new File(competitorCodeDir.getAbsolutePath() + File.separator + eName.substring(0, idx));
+                if (!dir.exists()) {
+                    if (!dir.mkdirs()) {
+                        throw new java.io.IOException("Cannot create dir " + dir.getCanonicalPath());
+                    }
                 }
-            }
 
-            if (idx != eName.length() - 1) {
-                final FileOutputStream fos = new FileOutputStream(new File(dir.getAbsolutePath() + File.separator + eName.substring(idx + 1)));
-                byte[] buff = new byte[1024];
-                int len;
-                while ((len = jis.read(buff)) != -1) {
-                    fos.write(buff, 0, len);
+                if (idx != eName.length() - 1) {
+                    try (
+                            final FileOutputStream fos = new FileOutputStream(new File(dir.getAbsolutePath() + File.separator + eName.substring(idx + 1)))
+                    ) {
+                        byte[] buff = new byte[1024];
+                        int len;
+                        while ((len = jis.read(buff)) != -1) {
+                            fos.write(buff, 0, len);
+                        }
+                    }
                 }
-                fos.flush();
-                fos.close();
             }
         }
-        jis.close();
 
         System.out.println("Store time: " + (System.currentTimeMillis() - startTime));
+    }
+
+    public boolean hasCompetitor(Competitor competitor) {
+        final File competitorCodeDir = getCompetitorDir(repositoryDirectory, competitor);
+        return competitorCodeDir.exists();
     }
 
     private File getCompetitorDir(File root, Competitor competitor) {
@@ -64,4 +72,9 @@ public class CodeManager {
 
         Utils.copyDirectory(competitorDir, robotsDirectory);
     }
+
+    public void cleanup() {
+        Utils.clearDir(robotsDirectory);
+    }
+
 }

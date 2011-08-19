@@ -48,7 +48,8 @@ public class RCBattlesExecutor implements IBattleListener {
         final RobotSpecification[] localRepository = robocodeEngine.getLocalRepository();
         for (Competitor competitor : competitors) {
             for (RobotSpecification spec : localRepository) {
-                if (spec.getNameAndVersion().equals(competitor.name + "* " + competitor.version)) {
+                if (spec.getNameAndVersion().equals(competitor.name + "* " + competitor.version) ||
+                        spec.getNameAndVersion().equals(competitor.name + " " + competitor.version)) {
                     specs[specsIdx++] = spec;
                 }
             }

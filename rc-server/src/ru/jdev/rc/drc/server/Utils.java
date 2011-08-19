@@ -45,4 +45,33 @@ public class Utils {
         }
     }
 
+    public static boolean deleteDir(File dir) {
+        if (dir.isDirectory()) {
+            String[] children = dir.list();
+            for (String aChildren : children) {
+                boolean success = deleteDir(new File(dir, aChildren));
+                if (!success) {
+                    return false;
+                }
+            }
+        }
+
+        // The directory is now empty so delete it
+        return dir.delete();
+    }
+
+    public static boolean clearDir(File dir) {
+        if (dir.isDirectory()) {
+            String[] children = dir.list();
+            for (String aChildren : children) {
+                boolean success = deleteDir(new File(dir, aChildren));
+                if (!success) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
 }
