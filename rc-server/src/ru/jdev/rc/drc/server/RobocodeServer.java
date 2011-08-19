@@ -4,8 +4,6 @@
 
 package ru.jdev.rc.drc.server;
 
-import robocode.control.BattlefieldSpecification;
-
 import javax.jws.WebMethod;
 import javax.jws.WebService;
 import javax.xml.ws.Endpoint;
@@ -30,24 +28,29 @@ public class RobocodeServer {
 
     private final Object brsLock = new Object();
     private int battleRequestsSequence = 0;
-    private BattleRequestQueueProcessor processor;
 
     public RobocodeServer() {
         // todo(zhidkov): set token
         battleRequestsQueue = new BattleRequestsQueue("token");
         battleResultsBuffer = new BattleResultsBuffer();
         final RCBattlesExecutor executor = new RCBattlesExecutor();
-        processor = new BattleRequestQueueProcessor(battleRequestsQueue, executor, codeManager, battleResultsBuffer);
+        final BattleRequestQueueProcessor processor = new BattleRequestQueueProcessor(battleRequestsQueue, executor, codeManager, battleResultsBuffer);
         Executors.newSingleThreadExecutor().execute(processor);
     }
 
     @WebMethod
-    public void registerCode(Competitor competitor) throws IOException {
+    public boolean registerCode(Competitor competitor) {
+        try {
             codeManager.storeCompetitor(competitor);
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 
     @WebMethod
-    public Integer executeBattle(Competitor[] competitors, BattlefieldSpecification bfSpec, int rounds, String authToken) throws IOException {
+    public Integer executeBattle(Competitor[] competitors, BFSpec bfSpec, int rounds, String authToken) {
         final int battleRequestId;
         synchronized (brsLock) {
             battleRequestId = battleRequestsSequence++;

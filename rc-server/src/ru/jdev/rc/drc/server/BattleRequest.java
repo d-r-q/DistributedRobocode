@@ -4,8 +4,6 @@
 
 package ru.jdev.rc.drc.server;
 
-import robocode.control.BattlefieldSpecification;
-
 public class BattleRequest {
 
     public final int requestId;
@@ -13,12 +11,12 @@ public class BattleRequest {
 
     public final Competitor[] competitors;
     public final int rounds;
-    public final BattlefieldSpecification bfSpec;
+    public final BFSpec bfSpec;
 
     public BattleRequestState state = BattleRequestState.RECEIVED;
 
     public BattleRequest(int battleRequestId, String secureToken, Competitor[] competitors,
-                         int rounds, BattlefieldSpecification bfSpec) {
+                         int rounds, BFSpec bfSpec) {
         requestId = battleRequestId;
         this.secureToken = secureToken;
 

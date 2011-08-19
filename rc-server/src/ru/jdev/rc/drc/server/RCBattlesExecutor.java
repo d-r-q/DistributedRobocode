@@ -10,32 +10,24 @@ import robocode.control.BattlefieldSpecification;
 import robocode.control.RobocodeEngine;
 import robocode.control.RobotSpecification;
 import robocode.control.events.*;
-import robocode.control.snapshot.IScoreSnapshot;
 
 import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 public class RCBattlesExecutor implements IBattleListener {
-
-    private final List<IScoreSnapshot[]> roundResults = new ArrayList<IScoreSnapshot[]>();
 
     private final RobocodeEngine robocodeEngine;
 
     private BattleResults[] currentBattleResults;
-    private IScoreSnapshot[] currentSortedTeamScores;
 
     public RCBattlesExecutor() {
         this.robocodeEngine = new RobocodeEngine(new File(".\\rc\\"));
         robocodeEngine.addBattleListener(this);
     }
 
-    public synchronized RSBattleResults executeBattle(Competitor[] competitors, BattlefieldSpecification bfSpec, int rounds) {
-        roundResults.clear();
+    public synchronized RSBattleResults executeBattle(Competitor[] competitors, BFSpec bfSpec, int rounds) {
         currentBattleResults = null;
 
-        final BattleSpecification battleSpecification = new BattleSpecification(rounds, bfSpec, getRobotSpecs(competitors));
+        final BattleSpecification battleSpecification = new BattleSpecification(rounds, new BattlefieldSpecification(bfSpec.getBfWidth(), bfSpec.getBfHeight()), getRobotSpecs(competitors));
         robocodeEngine.runBattle(battleSpecification);
         robocodeEngine.waitTillBattleOver();
 
@@ -89,7 +81,6 @@ public class RCBattlesExecutor implements IBattleListener {
     }
 
     public void onRoundEnded(RoundEndedEvent roundEndedEvent) {
-        roundResults.add(currentSortedTeamScores);
         System.out.println("Round finished");
     }
 
@@ -97,25 +88,12 @@ public class RCBattlesExecutor implements IBattleListener {
     }
 
     public void onTurnEnded(TurnEndedEvent turnEndedEvent) {
-        currentSortedTeamScores = turnEndedEvent.getTurnSnapshot().getSortedTeamScores();
     }
 
     public void onBattleMessage(BattleMessageEvent battleMessageEvent) {
     }
 
     public void onBattleError(BattleErrorEvent battleErrorEvent) {
-    }
-
-    public static void main(String[] args) {
-        try {
-            new CodeManager().storeCompetitor(null);
-        } catch (IOException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        }
-        final RCBattlesExecutor rcBattlesExecutor = new RCBattlesExecutor();
-        /*final Competitor c = new Competitor("lxx.Tomcat", "3.7.95", codeCheckSum, code);
-        rcBattlesExecutor.executeBattle(new Competitor[]{c, c},
-                new BattlefieldSpecification(800, 600), 10);*/
     }
 
 }
