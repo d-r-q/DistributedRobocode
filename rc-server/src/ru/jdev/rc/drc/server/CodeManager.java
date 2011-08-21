@@ -20,7 +20,7 @@ public class CodeManager {
         }
         long startTime = System.currentTimeMillis();
         try (
-                final JarInputStream jis = new JarInputStream(new ByteArrayInputStream(code));
+                final JarInputStream jis = new JarInputStream(new ByteArrayInputStream(code))
         ) {
             JarEntry e;
             while ((e = jis.getNextJarEntry()) != null) {

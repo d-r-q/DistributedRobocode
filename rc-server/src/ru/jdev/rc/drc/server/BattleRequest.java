@@ -13,7 +13,7 @@ public class BattleRequest {
     public final int rounds;
     public final BFSpec bfSpec;
 
-    public BattleRequestState state = BattleRequestState.RECEIVED;
+    public BattleRequestState state = new BattleRequestState();
 
     public BattleRequest(int battleRequestId, String secureToken, Competitor[] competitors,
                          int rounds, BFSpec bfSpec) {

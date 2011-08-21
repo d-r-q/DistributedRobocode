@@ -21,13 +21,16 @@ public class BattleRequestsQueue {
     }
 
     public synchronized void addBattleRequest(BattleRequest battleRequest) {
+        int queueOrder;
         if (battleRequest.secureToken.equals(secureToken)) {
             priorityQueue.add(battleRequest);
+            queueOrder = priorityQueue.size();
         } else {
-
             commonQueue.add(battleRequest);
+            queueOrder = priorityQueue.size() + commonQueue.size();
         }
-        battleRequest.state = BattleRequestState.QUEUED;
+        battleRequest.state.setState(BattleRequestState.State.QUEUED);
+        battleRequest.state.setMessage("Queue order: " + queueOrder);
 
         notify();
     }
@@ -38,12 +41,37 @@ public class BattleRequestsQueue {
             wait(max(timeLimit - System.currentTimeMillis(), 1));
         }
 
+        final BattleRequest res = getBattleRequest();
+
+        resetQueueOrder();
+
+        return res;
+    }
+
+    private BattleRequest getBattleRequest() {
+        final BattleRequest res;
         if (priorityQueue.size() > 0) {
-            return priorityQueue.remove(0);
+            res = priorityQueue.remove(0);
         } else if (commonQueue.size() > 0) {
-            return commonQueue.remove(0);
+            res = commonQueue.remove(0);
         } else {
-            return null;
+            res = null;
+        }
+        return res;
+    }
+
+    private void resetQueueOrder() {
+        int queueOrder = 1;
+        for (BattleRequest request : priorityQueue) {
+            request.state.setState(BattleRequestState.State.QUEUED);
+            request.state.setMessage("Queue order: " + queueOrder);
+            queueOrder++;
+        }
+
+        for (BattleRequest request : commonQueue) {
+            request.state.setState(BattleRequestState.State.QUEUED);
+            request.state.setMessage("Queue order: " + queueOrder);
+            queueOrder++;
         }
     }
 

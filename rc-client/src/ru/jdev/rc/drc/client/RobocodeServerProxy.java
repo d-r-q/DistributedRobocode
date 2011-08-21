@@ -2,7 +2,6 @@ package ru.jdev.rc.drc.client;
 
 import ru.jdev.rc.drc.server.*;
 
-import java.net.URL;
 import java.util.*;
 
 /**
@@ -49,12 +48,12 @@ public class RobocodeServerProxy {
 
     private void checkCurrentRequestState() {
         final BattleRequestState state = serverPort.getState(currentBattleRequestId);
-        if (state == BattleRequestState.EXECUTED) {
+        if (state.getState() == State.EXECUTED) {
             final BattleRequest battleRequest = enqueuedBattleRequests.remove(currentBattleRequestId);
             battleRequest.battleResults = serverPort.getBattleResults(currentBattleRequestId);
             executedBattleRequestsBuffer.add(battleRequest);
             currentBattleRequestId = null;
-        } else if (state == BattleRequestState.REJECTED) {
+        } else if (state.getState() == State.REJECTED) {
             currentBattleRequestId = null;
             enqueuedBattleRequests.remove(currentBattleRequestId);
         }

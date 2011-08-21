@@ -18,16 +18,19 @@ public class RCBattlesExecutor implements IBattleListener {
     private final RobocodeEngine robocodeEngine;
 
     private BattleResults[] currentBattleResults;
+    private BattleRequest currentBattleRequest;
 
     public RCBattlesExecutor() {
         this.robocodeEngine = new RobocodeEngine(new File(".\\rc\\"));
         robocodeEngine.addBattleListener(this);
     }
 
-    public synchronized RSBattleResults executeBattle(Competitor[] competitors, BFSpec bfSpec, int rounds) {
+    public synchronized RSBattleResults executeBattle(BattleRequest battleRequest) {
+        currentBattleRequest = battleRequest;
         currentBattleResults = null;
 
-        final BattleSpecification battleSpecification = new BattleSpecification(rounds, new BattlefieldSpecification(bfSpec.getBfWidth(), bfSpec.getBfHeight()), getRobotSpecs(competitors));
+        final BattleSpecification battleSpecification = new BattleSpecification(battleRequest.rounds,
+                new BattlefieldSpecification(battleRequest.bfSpec.getBfWidth(), battleRequest.bfSpec.getBfHeight()), getRobotSpecs(battleRequest.competitors));
         robocodeEngine.runBattle(battleSpecification);
         robocodeEngine.waitTillBattleOver();
 
@@ -78,11 +81,11 @@ public class RCBattlesExecutor implements IBattleListener {
     }
 
     public void onRoundStarted(RoundStartedEvent roundStartedEvent) {
-        System.out.println("Round started");
+        currentBattleRequest.state.setState(BattleRequestState.State.EXECUTING);
+        currentBattleRequest.state.setMessage("Round: " + roundStartedEvent.getRound());
     }
 
     public void onRoundEnded(RoundEndedEvent roundEndedEvent) {
-        System.out.println("Round finished");
     }
 
     public void onTurnStarted(TurnStartedEvent turnStartedEvent) {

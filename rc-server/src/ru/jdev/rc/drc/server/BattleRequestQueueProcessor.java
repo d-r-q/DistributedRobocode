@@ -38,10 +38,10 @@ public class BattleRequestQueueProcessor implements Runnable {
 
             try {
                 loadCompetitors(request);
-                request.state = BattleRequestState.EXECUTING;
-                final RSBattleResults rsBattleResults = rcBattlesExecutor.executeBattle(request.competitors, request.bfSpec, request.rounds);
+                final RSBattleResults rsBattleResults = rcBattlesExecutor.executeBattle(request);
                 rsBattleResults.requestId = request.requestId;
-                request.state = BattleRequestState.EXECUTED;
+                request.state.setState(BattleRequestState.State.EXECUTED);
+                request.state.setMessage("");
                 battleResultsBuffer.addBattleResult(request.getRequestId(), rsBattleResults);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -56,7 +56,8 @@ public class BattleRequestQueueProcessor implements Runnable {
             try {
                 codeManager.loadCompetitor(competitor);
             } catch (IOException e) {
-                request.state = BattleRequestState.REJECTED;
+                request.state.setState(BattleRequestState.State.REJECTED);
+                request.state.setMessage(e.getMessage());
             }
         }
     }
