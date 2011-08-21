@@ -25,13 +25,15 @@ public class RobocodeServer {
 
     private BattleRequestsQueue battleRequestsQueue;
     private BattleResultsBuffer battleResultsBuffer;
-    private final BattleRequestQueueProcessor processor;
+    private  BattleRequestQueueProcessor processor;
 
     private final Object brsLock = new Object();
     private int battleRequestsSequence = 0;
 
-    public RobocodeServer(String authToken) {
-        // todo(zhidkov): set token
+    public RobocodeServer() {
+    }
+
+    private void init(String authToken) {
         battleRequestsQueue = new BattleRequestsQueue(authToken);
         battleResultsBuffer = new BattleResultsBuffer();
         final RCBattlesExecutor executor = new RCBattlesExecutor();
@@ -45,9 +47,9 @@ public class RobocodeServer {
     }
 
     @WebMethod
-    public boolean registerCode(Competitor competitor) {
+    public boolean registerCode(Competitor competitor, byte[] code) {
         try {
-            codeManager.storeCompetitor(competitor);
+            codeManager.storeCompetitor(competitor, code);
             return true;
         } catch (IOException e) {
             e.printStackTrace();
@@ -78,7 +80,8 @@ public class RobocodeServer {
     }
 
     public static void main(String[] args) throws IOException {
-        final RobocodeServer server = new RobocodeServer(args[2]);
+        final RobocodeServer server = new RobocodeServer();
+        server.init(args[2]);
         final Endpoint endpoint = Endpoint.publish(String.format("http://%s:%s/RS", args[0], args[1]), server);
         System.out.println("Endpoint published");
         System.out.println("Type \"exit\" to exit");

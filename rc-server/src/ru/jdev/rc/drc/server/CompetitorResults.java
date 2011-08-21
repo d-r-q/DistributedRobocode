@@ -18,4 +18,28 @@ public class CompetitorResults {
 
     public CompetitorResults() {
     }
+
+    public int getFirsts() {
+        return firsts;
+    }
+
+    public void setFirsts(int firsts) {
+        this.firsts = firsts;
+    }
+
+    public int getScore() {
+        return score;
+    }
+
+    public void setScore(int score) {
+        this.score = score;
+    }
+
+    public int getBulletDamage() {
+        return bulletDamage;
+    }
+
+    public void setBulletDamage(int bulletDamage) {
+        this.bulletDamage = bulletDamage;
+    }
 }

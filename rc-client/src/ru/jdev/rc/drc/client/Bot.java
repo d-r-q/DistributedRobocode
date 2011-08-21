@@ -13,6 +13,7 @@ public class Bot {
 
     private String alias;
     private Competitor competitor;
+    private byte[] code;
 
     public Bot(String botName, String botVersion) {
         this.botName = botName;
@@ -41,5 +42,33 @@ public class Bot {
 
     public void setCompetitor(Competitor competitor) {
         this.competitor = competitor;
+    }
+
+    public byte[] getCode() {
+        return code;
+    }
+
+    public void setCode(byte[] code) {
+        this.code = code;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Bot bot = (Bot) o;
+
+        if (botName != null ? !botName.equals(bot.botName) : bot.botName != null) return false;
+        if (botVersion != null ? !botVersion.equals(bot.botVersion) : bot.botVersion != null) return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = botName != null ? botName.hashCode() : 0;
+        result = 31 * result + (botVersion != null ? botVersion.hashCode() : 0);
+        return result;
     }
 }

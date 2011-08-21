@@ -40,6 +40,7 @@ public class BattleRequestQueueProcessor implements Runnable {
                 loadCompetitors(request);
                 request.state = BattleRequestState.EXECUTING;
                 final RSBattleResults rsBattleResults = rcBattlesExecutor.executeBattle(request.competitors, request.bfSpec, request.rounds);
+                rsBattleResults.requestId = request.requestId;
                 request.state = BattleRequestState.EXECUTED;
                 battleResultsBuffer.addBattleResult(request.getRequestId(), rsBattleResults);
             } catch (Exception e) {

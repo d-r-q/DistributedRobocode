@@ -53,6 +53,10 @@
             <fileset dir="robots"/>
         </copy>
 
+        <copy todir="${rc.client.build.dir}\config">
+            <fileset dir="config"/>
+        </copy>
+
         <echo file="${rc.client.build.dir}\rc-client.bat">"${project.java.home}\bin\java" -cp "rc-client.jar;libs\rc-server-ports.jar" ru.jdev.rc.drc.client.RobocodeClient "sample.RamFire 1.0" test_challenge.rrc 2
         </echo>
     </target>

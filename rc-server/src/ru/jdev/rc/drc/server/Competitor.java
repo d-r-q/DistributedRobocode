@@ -12,16 +12,7 @@ public class Competitor implements Serializable {
     public String version;
     public byte[] codeCheckSum;
 
-    public byte[] code;
-
     public Competitor() {
-    }
-
-    public Competitor(String name, String version, byte[] codeCheckSum, byte[] code) {
-        this.name = name;
-        this.version = version;
-        this.codeCheckSum = codeCheckSum;
-        this.code = code;
     }
 
     @Override

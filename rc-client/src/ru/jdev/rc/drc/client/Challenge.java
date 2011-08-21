@@ -3,8 +3,11 @@ package ru.jdev.rc.drc.client;
 import java.io.IOException;
 import java.io.LineNumberReader;
 import java.io.Reader;
+import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * User: jdev
@@ -12,7 +15,10 @@ import java.util.List;
  */
 public class Challenge {
 
-    private List<BotsGroup> botsGroups = new ArrayList<>();
+    private final List<BotsGroup> botsGroups = new ArrayList<>();
+    private final Set<Bot> allBots = new HashSet<>();
+
+    private Bot challenger;
 
     private String name;
     private String scoringType;
@@ -25,14 +31,30 @@ public class Challenge {
 
     private void addGroup(BotsGroup group) {
         botsGroups.add(group);
+        for (Bot bot : group.getBots()) {
+            allBots.add(bot);
+        }
     }
 
     public List<BotsGroup> getBotGroups() {
         return botsGroups;
     }
 
+    public Bot getChallenger() {
+        return challenger;
+    }
+
+    public void setChallenger(Bot challenger) {
+        allBots.add(challenger);
+        this.challenger = challenger;
+    }
+
+    public Set<Bot> getAllBots() {
+        return allBots;
+    }
+
     // original code from RoboResearch (http://robowiki.net/wiki/RoboResearch)
-    public static Challenge load(Reader inStream) throws IOException {
+    public static Challenge load(Reader inStream, BotsFactory botsFactory) throws IOException {
 
         // input stream must be closed by caller
         final LineNumberReader in = new LineNumberReader(inStream);
@@ -92,7 +114,7 @@ public class Challenge {
                 // add the line as a bot to the category!
                 final String[] tokens = line.split(",");
                 final String[] botName = tokens[0].split(" ");
-                Bot bot = new Bot(botName[0], botName[1]);
+                Bot bot = botsFactory.getBot(botName[0], botName[1]);
                 if (tokens.length > 1) {
                     bot.setAlias(tokens[1]);
                 }

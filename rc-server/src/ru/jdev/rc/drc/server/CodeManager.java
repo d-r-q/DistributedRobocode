@@ -13,14 +13,14 @@ public class CodeManager {
     private final File robotsDirectory = new File("." + File.separator + "rc" + File.separator + "dev_path");
     private final File repositoryDirectory = new File("." + File.separator + "rs_repository");
 
-    public void storeCompetitor(Competitor competitor) throws java.io.IOException {
+    public void storeCompetitor(Competitor competitor, byte[] code) throws java.io.IOException {
         final File competitorCodeDir = getCompetitorDir(repositoryDirectory, competitor);
         if (competitorCodeDir.exists()) {
             return;
         }
         long startTime = System.currentTimeMillis();
         try (
-                final JarInputStream jis = new JarInputStream(new ByteArrayInputStream(competitor.code));
+                final JarInputStream jis = new JarInputStream(new ByteArrayInputStream(code));
         ) {
             JarEntry e;
             while ((e = jis.getNextJarEntry()) != null) {
