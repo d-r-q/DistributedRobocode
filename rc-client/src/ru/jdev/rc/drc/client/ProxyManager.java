@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2011 Alexey Zhidkov (Jdev). All Rights Reserved.
+ */
+
 package ru.jdev.rc.drc.client;
 
 import ru.jdev.rc.drc.server.Competitor;
@@ -6,10 +10,7 @@ import ru.jdev.rc.drc.server.RobocodeServer;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -33,7 +34,7 @@ public class ProxyManager {
         pendingProxies = getProxiesFutures(executorService);
     }
 
-    public RobocodeServerProxy getFreeProxy() {
+    public synchronized RobocodeServerProxy getFreeProxy() {
         while (true) {
             checkPendingProxies();
 
@@ -52,7 +53,7 @@ public class ProxyManager {
         }
     }
 
-    public List<RobocodeServerProxy> getAvailableProxies() {
+    public synchronized List<RobocodeServerProxy> getAvailableProxies() {
         return availableProxies;
     }
 
@@ -79,8 +80,16 @@ public class ProxyManager {
     }
 
     private void loadCompetitors(final RobocodeServer serverPort) {
+        final List<Competitor> requiredCompetitors = new ArrayList<>();
+        final Map<String, byte[]> competitorsCode = new HashMap<>();
         for (Bot bot : bots) {
-            registerCompetitor(bot.getCompetitor(), serverPort, bot.getCode());
+            requiredCompetitors.add(bot.getCompetitor());
+            competitorsCode.put(bot.getBotName() + bot.getBotVersion(), bot.getCode());
+        }
+
+        final List<Competitor> missedCompetitors = serverPort.getMissedCompetitors(requiredCompetitors);
+        for (Competitor competitor : missedCompetitors) {
+            registerCompetitor(competitor, serverPort, competitorsCode.get(competitor.getName() + competitor.getVersion()));
         }
     }
 
@@ -104,6 +113,38 @@ public class ProxyManager {
         }
 
         return futures;
+    }
+
+    public List<ProxyState> getState() {
+        final List<ProxyState> proxiesState = new ArrayList<>();
+        for (RobocodeServerProxy proxy : availableProxies) {
+            final BattleRequest currentBattleRequest = proxy.getCurrentBattleRequest();
+            if (currentBattleRequest != null) {
+                final Competitor competitor = currentBattleRequest.competitors.get(1);
+                proxiesState.add(new ProxyState(proxy.getUrl(), competitor.getName() + " " + competitor.getVersion(),
+                        currentBattleRequest.state.getMessage(), true));
+            }
+        }
+        System.out.println("APS: " + availableProxies.size());
+        System.out.println("PSS: " + proxiesState.size());
+
+
+        return proxiesState;
+    }
+
+    public class ProxyState {
+
+        public final String url;
+        public final String currentBot;
+        public final String battleRequestState;
+        public boolean isOnline;
+
+        public ProxyState(String url, String currentBot, String battleRequestState, boolean online) {
+            this.url = url;
+            this.currentBot = currentBot;
+            this.battleRequestState = battleRequestState;
+            isOnline = online;
+        }
     }
 
 }

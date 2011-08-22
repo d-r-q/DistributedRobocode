@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2011 Alexey Zhidkov (Jdev). All Rights Reserved.
+ */
+
 package ru.jdev.rc.drc.client;
 
 import ru.jdev.rc.drc.server.BfSpec;
@@ -15,6 +19,7 @@ public class BattleRequestManager {
     private final List<BattleRequest> pendingRequests = new ArrayList<>();
     private final List<BattleRequest> executingRequests = new ArrayList<>();
     private final List<BattleRequest> executedRequests = new ArrayList<>();
+    private int totalRequests;
 
     public BattleRequestManager(Challenge challenge, int seasons) {
         final BfSpec battlefieldSpecification = new BfSpec();
@@ -31,9 +36,11 @@ public class BattleRequestManager {
                 }
             }
         }
+
+        totalRequests = pendingRequests.size();
     }
 
-    public BattleRequest getBattleRequest() {
+    public synchronized BattleRequest getBattleRequest() {
         if (pendingRequests.size() > 0) {
             final BattleRequest request = pendingRequests.remove(0);
             executingRequests.add(request);
@@ -47,7 +54,7 @@ public class BattleRequestManager {
         return null;
     }
 
-    public void battleRequestExecuted(BattleRequest battleRequest) {
+    public synchronized void battleRequestExecuted(BattleRequest battleRequest) {
         executedRequests.add(battleRequest);
         executingRequests.remove(battleRequest);
     }
@@ -62,4 +69,34 @@ public class BattleRequestManager {
     public boolean hasNotExecutedRequests() {
         return pendingRequests.size() > 0 || executingRequests.size() > 0;
     }
+
+    public int getExecutedBattleRequests() {
+        return executedRequests.size();
+    }
+
+    public int getRemainingBattleRequests() {
+        return pendingRequests.size() + executingRequests.size();
+    }
+
+    public int getTotalRequests() {
+        return totalRequests;
+    }
+
+    public synchronized State getState() {
+        return new State(new ArrayList<>(pendingRequests), new ArrayList<>(executingRequests), new ArrayList<>(executedRequests));
+    }
+
+    public class State {
+
+        public List<BattleRequest> pendingRequests;
+        public List<BattleRequest> executingRequests;
+        public List<BattleRequest> executedRequests;
+
+        public State(List<BattleRequest> pendingRequests, List<BattleRequest> executingRequests, List<BattleRequest> executedRequests) {
+            this.pendingRequests = pendingRequests;
+            this.executingRequests = executingRequests;
+            this.executedRequests = executedRequests;
+        }
+    }
+
 }

@@ -1,9 +1,12 @@
+/*
+ * Copyright (c) 2011 Alexey Zhidkov (Jdev). All Rights Reserved.
+ */
+
 package ru.jdev.rc.drc.client;
 
 import java.io.IOException;
 import java.io.LineNumberReader;
 import java.io.Reader;
-import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;

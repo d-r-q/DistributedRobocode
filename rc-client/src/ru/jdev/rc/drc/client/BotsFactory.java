@@ -1,16 +1,18 @@
 /*
- * Copyright (c) 2011 Zodiac Interactive, LLC. All Rights Reserved.
+ * Copyright (c) 2011 Alexey Zhidkov (Jdev). All Rights Reserved.
  */
 
 package ru.jdev.rc.drc.client;
 
 import ru.jdev.rc.drc.server.Competitor;
 
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 
 public class BotsFactory {

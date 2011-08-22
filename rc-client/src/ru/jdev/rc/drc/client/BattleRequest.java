@@ -1,5 +1,10 @@
+/*
+ * Copyright (c) 2011 Alexey Zhidkov (Jdev). All Rights Reserved.
+ */
+
 package ru.jdev.rc.drc.client;
 
+import ru.jdev.rc.drc.server.BattleRequestState;
 import ru.jdev.rc.drc.server.BfSpec;
 import ru.jdev.rc.drc.server.Competitor;
 import ru.jdev.rc.drc.server.RsBattleResults;
@@ -19,6 +24,7 @@ public class BattleRequest {
     public int localId;
     public int remoteId;
     public RsBattleResults battleResults;
+    public BattleRequestState state;
 
     public BattleRequest(List<Competitor> competitors, BfSpec bfSpec, int rounds) {
         this.competitors = competitors;

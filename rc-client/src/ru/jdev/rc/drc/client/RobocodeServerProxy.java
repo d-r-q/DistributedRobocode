@@ -1,6 +1,12 @@
+/*
+ * Copyright (c) 2011 Alexey Zhidkov (Jdev). All Rights Reserved.
+ */
+
 package ru.jdev.rc.drc.client;
 
-import ru.jdev.rc.drc.server.*;
+import ru.jdev.rc.drc.server.BattleRequestState;
+import ru.jdev.rc.drc.server.RobocodeServer;
+import ru.jdev.rc.drc.server.State;
 
 import java.util.*;
 
@@ -48,6 +54,7 @@ public class RobocodeServerProxy {
 
     private void checkCurrentRequestState() {
         final BattleRequestState state = serverPort.getState(currentBattleRequestId);
+        enqueuedBattleRequests.get(currentBattleRequestId).state = state;
         if (state.getState() == State.EXECUTED) {
             final BattleRequest battleRequest = enqueuedBattleRequests.remove(currentBattleRequestId);
             battleRequest.battleResults = serverPort.getBattleResults(currentBattleRequestId);
@@ -77,8 +84,16 @@ public class RobocodeServerProxy {
         return executedBattleRequestsBuffer.size() > 0;
     }
 
+    public String getUrl() {
+        return url;
+    }
+
     @Override
     public String toString() {
         return url;
+    }
+
+    public synchronized BattleRequest getCurrentBattleRequest() {
+        return enqueuedBattleRequests.get(currentBattleRequestId);
     }
 }

@@ -52,6 +52,8 @@ public class BattleRequestQueueProcessor implements Runnable {
     }
 
     private void loadCompetitors(BattleRequest request) {
+        request.state.setState(BattleRequestState.State.EXECUTING);
+        request.state.setMessage("Load competitors");
         for (Competitor competitor : request.competitors) {
             try {
                 codeManager.loadCompetitor(competitor);

@@ -31,6 +31,8 @@ public class RCBattlesExecutor implements IBattleListener {
 
         final BattleSpecification battleSpecification = new BattleSpecification(battleRequest.rounds,
                 new BattlefieldSpecification(battleRequest.bfSpec.getBfWidth(), battleRequest.bfSpec.getBfHeight()), getRobotSpecs(battleRequest.competitors));
+        currentBattleRequest.state.setState(BattleRequestState.State.EXECUTING);
+        currentBattleRequest.state.setMessage("Starting battle");
         robocodeEngine.runBattle(battleSpecification);
         robocodeEngine.waitTillBattleOver();
 

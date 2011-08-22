@@ -8,7 +8,9 @@ import javax.jws.WebMethod;
 import javax.jws.WebService;
 import javax.xml.ws.Endpoint;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 
@@ -25,7 +27,7 @@ public class RobocodeServer {
 
     private BattleRequestsQueue battleRequestsQueue;
     private BattleResultsBuffer battleResultsBuffer;
-    private  BattleRequestQueueProcessor processor;
+    private BattleRequestQueueProcessor processor;
 
     private final Object brsLock = new Object();
     private int battleRequestsSequence = 0;
@@ -44,6 +46,19 @@ public class RobocodeServer {
     @WebMethod
     public boolean hasCompetitor(Competitor competitor) {
         return codeManager.hasCompetitor(competitor);
+    }
+
+    @WebMethod
+    public List<Competitor> getMissedCompetitors(List<Competitor> competitors) {
+        final List<Competitor> missedCompetitors = new ArrayList<>();
+
+        for (Competitor competitor : competitors) {
+            if (!codeManager.hasCompetitor(competitor)) {
+                missedCompetitors.add(competitor);
+            }
+        }
+
+        return missedCompetitors;
     }
 
     @WebMethod
