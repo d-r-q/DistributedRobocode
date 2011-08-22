@@ -11,9 +11,10 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+
+import static java.lang.Math.max;
 
 /**
  * User: jdev
@@ -21,94 +22,51 @@ import java.util.concurrent.Future;
  */
 public class ProxyManager {
 
-    private final List<RobocodeServerProxy> availableProxies = new ArrayList<>();
-
-    private final ExecutorService executorService;
-    private final List<Future<RobocodeServerProxy>> pendingProxies;
-    private final Set<Bot> bots;
+    private final Object proxiesLock = new Object();
+    private final List<RobocodeServerProxy> proxies;
 
     public ProxyManager(ExecutorService executorService, Set<Bot> bots) throws IOException {
-        this.executorService = executorService;
-        this.bots = bots;
-
-        pendingProxies = getProxiesFutures(executorService);
+        proxies = getProxies(executorService, bots);
+        executorService.submit(new StateUpdater());
     }
 
     public synchronized RobocodeServerProxy getFreeProxy() {
         while (true) {
-            checkPendingProxies();
 
-            for (RobocodeServerProxy proxy : availableProxies) {
+            for (RobocodeServerProxy proxy : proxies) {
                 if (proxy.ready()) {
                     return proxy;
                 }
             }
 
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-                return null;
+            synchronized (proxiesLock) {
+                try {
+                    proxiesLock.wait();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                    return null;
+                }
             }
         }
     }
 
     public synchronized List<RobocodeServerProxy> getAvailableProxies() {
-        return availableProxies;
+        return proxies;
     }
 
-    private void checkPendingProxies() {
-        for (Iterator<Future<RobocodeServerProxy>> iter = pendingProxies.iterator(); iter.hasNext(); ) {
-            final Future<RobocodeServerProxy> future = iter.next();
-            try {
-                if (future.isDone()) {
-                    final RobocodeServerProxy robocodeServerProxy = future.get();
-                    if (robocodeServerProxy != null) {
-                        loadCompetitors(robocodeServerProxy.getServerPort());
-                        availableProxies.add(robocodeServerProxy);
-                        iter.remove();
-                    }
-                }
-            } catch (InterruptedException | ExecutionException e) {
-                e.printStackTrace();
-            }
-        }
-
-        if (pendingProxies.size() == 0 && availableProxies.size() == 0) {
-            throw new IllegalStateException("No available servers");
-        }
-    }
-
-    private void loadCompetitors(final RobocodeServer serverPort) {
-        final List<Competitor> requiredCompetitors = new ArrayList<>();
-        final Map<String, byte[]> competitorsCode = new HashMap<>();
-        for (Bot bot : bots) {
-            requiredCompetitors.add(bot.getCompetitor());
-            competitorsCode.put(bot.getBotName() + bot.getBotVersion(), bot.getCode());
-        }
-
-        final List<Competitor> missedCompetitors = serverPort.getMissedCompetitors(requiredCompetitors);
-        for (Competitor competitor : missedCompetitors) {
-            registerCompetitor(competitor, serverPort, competitorsCode.get(competitor.getName() + competitor.getVersion()));
-        }
-    }
-
-    private void registerCompetitor(Competitor competitor, RobocodeServer serverPort, byte[] code) {
-        if (!serverPort.hasCompetitor(competitor)) {
-            System.out.printf("Registering competitor %s %s\n", competitor.getName(), competitor.getVersion());
-            serverPort.registerCode(competitor, code);
-        }
-    }
-
-    private static List<Future<RobocodeServerProxy>> getProxiesFutures(final ExecutorService service) throws IOException {
-        final List<Future<RobocodeServerProxy>> futures = new ArrayList<>();
+    private static List<RobocodeServerProxy> getProxies(final ExecutorService service, Set<Bot> bots) throws IOException {
+        final List<RobocodeServerProxy> futures = new ArrayList<>();
         try (
                 BufferedReader reader = new BufferedReader(new FileReader("./config/servers.cfg"))
         ) {
             String line;
             while ((line = reader.readLine()) != null) {
                 final String[] serverCfg = line.split(";");
-                futures.add(service.submit(new RSProxyFactory(serverCfg[2], serverCfg[0], Integer.parseInt(serverCfg[1]))));
+                final String url = String.format("http://%s:%d/RS", serverCfg[0], Integer.parseInt(serverCfg[1]));
+                final Future<RobocodeServer> connectingFuture = service.submit(new RSProxyFactory(url));
+                final RobocodeServerProxy proxy = new RobocodeServerProxy(serverCfg[2], url, bots);
+                proxy.setConnectingFuture(connectingFuture);
+                futures.add(proxy);
             }
         }
 
@@ -117,17 +75,16 @@ public class ProxyManager {
 
     public List<ProxyState> getState() {
         final List<ProxyState> proxiesState = new ArrayList<>();
-        for (RobocodeServerProxy proxy : availableProxies) {
+        for (RobocodeServerProxy proxy : proxies) {
             final BattleRequest currentBattleRequest = proxy.getCurrentBattleRequest();
             if (currentBattleRequest != null) {
                 final Competitor competitor = currentBattleRequest.competitors.get(1);
                 proxiesState.add(new ProxyState(proxy.getUrl(), competitor.getName() + " " + competitor.getVersion(),
-                        currentBattleRequest.state.getMessage(), true));
+                        (currentBattleRequest.state != null ? currentBattleRequest.state.getMessage() : " -- "), proxy.isConnected(), proxy.getStateMessage()));
+            } else {
+                proxiesState.add(new ProxyState(proxy.getUrl(), " -- ", " -- ", proxy.isConnected(), proxy.getStateMessage()));
             }
         }
-        System.out.println("APS: " + availableProxies.size());
-        System.out.println("PSS: " + proxiesState.size());
-
 
         return proxiesState;
     }
@@ -137,13 +94,54 @@ public class ProxyManager {
         public final String url;
         public final String currentBot;
         public final String battleRequestState;
-        public boolean isOnline;
+        public final boolean isOnline;
+        public final String message;
 
-        public ProxyState(String url, String currentBot, String battleRequestState, boolean online) {
+        public ProxyState(String url, String currentBot, String battleRequestState, boolean online, String message) {
             this.url = url;
             this.currentBot = currentBot;
             this.battleRequestState = battleRequestState;
             isOnline = online;
+            this.message = message;
+        }
+    }
+
+    private class StateUpdater implements Runnable {
+
+        @Override
+        public void run() {
+            while (true) {
+                try {
+                    long startTime = System.currentTimeMillis();
+                    int maxRound = 1;
+                    for (RobocodeServerProxy proxy : proxies) {
+                        if (proxy.checkState()) {
+                            synchronized (proxiesLock) {
+                                proxiesLock.notify();
+                            }
+                            final BattleRequest currentBattleRequest = proxy.getCurrentBattleRequest();
+                            if (currentBattleRequest != null) {
+                                final String message = currentBattleRequest.state.getMessage();
+                                if (message != null && message.startsWith("Round")) {
+                                    maxRound = max(maxRound, Integer.parseInt(message.split(" ")[1]));
+                                }
+                            }
+                        }
+                    }
+
+                    long timeout = startTime + (100 / max(1, maxRound / 5)) - System.currentTimeMillis();
+                    if (timeout > 0) {
+                        try {
+                            Thread.sleep(timeout);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                            break;
+                        }
+                    }
+                } catch (Throwable t) {
+                    t.printStackTrace();
+                }
+            }
         }
     }
 

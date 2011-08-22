@@ -5,13 +5,18 @@
 package ru.jdev.rc.drc.server;
 
 import java.io.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 
 public class CodeManager {
 
-    private final File robotsDirectory = new File("." + File.separator + "rc" + File.separator + "dev_path");
-    private final File repositoryDirectory = new File("." + File.separator + "rs_repository");
+    private static final File robotsDirectory = new File("." + File.separator + "rc" + File.separator + "dev_path");
+    private static final File repositoryDirectory = new File("." + File.separator + "rs_repository");
+
+    private final Map<String, byte[]> loadedCode = new HashMap<>();
 
     public void storeCompetitor(Competitor competitor, byte[] code) throws java.io.IOException {
         final File competitorCodeDir = getCompetitorDir(repositoryDirectory, competitor);
@@ -65,12 +70,17 @@ public class CodeManager {
     }
 
     public void loadCompetitor(Competitor competitor) throws java.io.IOException {
+        final byte[] loadedVersion = loadedCode.get(competitor.name + competitor.version);
+        if (loadedVersion != null && Arrays.equals(loadedVersion, competitor.codeCheckSum)) {
+            return;
+        }
         final File competitorDir = getCompetitorDir(repositoryDirectory, competitor);
         if (!competitorDir.exists()) {
             throw new CompetitorNotFoundException("Competitor " + competitor + " not found", competitor);
         }
 
         Utils.copyDirectory(competitorDir, robotsDirectory);
+        loadedCode.put(competitor.name + competitor.version, competitor.codeCheckSum);
     }
 
     public void cleanup() {

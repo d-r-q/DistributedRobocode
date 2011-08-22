@@ -20,12 +20,15 @@ public class RCBattlesExecutor implements IBattleListener {
     private BattleResults[] currentBattleResults;
     private BattleRequest currentBattleRequest;
 
+    private long finishTime;
+
     public RCBattlesExecutor() {
         this.robocodeEngine = new RobocodeEngine(new File(".\\rc\\"));
         robocodeEngine.addBattleListener(this);
     }
 
     public synchronized RSBattleResults executeBattle(BattleRequest battleRequest) {
+        System.out.println("Not working time: " + (System.currentTimeMillis() - finishTime));
         currentBattleRequest = battleRequest;
         currentBattleResults = null;
 
@@ -42,6 +45,8 @@ public class RCBattlesExecutor implements IBattleListener {
             compRess[idx] = new CompetitorResults(br.getFirsts(), br.getScore(), br.getBulletDamage());
             idx++;
         }
+
+        finishTime = System.currentTimeMillis();
 
         return new RSBattleResults(compRess);
     }

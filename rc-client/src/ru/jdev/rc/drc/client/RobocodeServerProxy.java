@@ -5,10 +5,13 @@
 package ru.jdev.rc.drc.client;
 
 import ru.jdev.rc.drc.server.BattleRequestState;
+import ru.jdev.rc.drc.server.Competitor;
 import ru.jdev.rc.drc.server.RobocodeServer;
 import ru.jdev.rc.drc.server.State;
 
 import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 /**
  * User: jdev
@@ -19,16 +22,20 @@ public class RobocodeServerProxy {
     private final Map<Integer, BattleRequest> enqueuedBattleRequests = new HashMap<>();
     private final Set<BattleRequest> executedBattleRequestsBuffer = new HashSet<>();
 
-    private final RobocodeServer serverPort;
     private final String authToken;
     private final String url;
+    private final Set<Bot> bots;
 
+    private RobocodeServer serverPort;
+    private Future<RobocodeServer> connectingFuture;
     private Integer currentBattleRequestId = null;
+    private String stateMessage;
+    private boolean connected;
 
-    public RobocodeServerProxy(RobocodeServer serverPort, String authToken, String url) {
-        this.serverPort = serverPort;
+    public RobocodeServerProxy(String authToken, String url, Set<Bot> bots) {
         this.authToken = authToken;
         this.url = url;
+        this.bots = bots;
     }
 
     public synchronized void enqueueBattle(BattleRequest request) {
@@ -42,28 +49,69 @@ public class RobocodeServerProxy {
         enqueuedBattleRequests.put(request.remoteId, request);
     }
 
-    public boolean ready() {
-        if (currentBattleRequestId == null) {
-            return true;
-        }
+    public synchronized boolean ready() {
+        return serverPort != null && currentBattleRequestId == null;
 
-        checkCurrentRequestState();
-
-        return currentBattleRequestId == null;
     }
 
-    private void checkCurrentRequestState() {
-        final BattleRequestState state = serverPort.getState(currentBattleRequestId);
-        enqueuedBattleRequests.get(currentBattleRequestId).state = state;
-        if (state.getState() == State.EXECUTED) {
-            final BattleRequest battleRequest = enqueuedBattleRequests.remove(currentBattleRequestId);
-            battleRequest.battleResults = serverPort.getBattleResults(currentBattleRequestId);
-            executedBattleRequestsBuffer.add(battleRequest);
-            currentBattleRequestId = null;
-        } else if (state.getState() == State.REJECTED) {
-            currentBattleRequestId = null;
-            enqueuedBattleRequests.remove(currentBattleRequestId);
+    public synchronized boolean checkState() {
+        if (connectingFuture != null) {
+            if (connectingFuture.isDone()) {
+                try {
+                    serverPort = connectingFuture.get();
+                    connectingFuture = null;
+                    if (serverPort != null) {
+                        loadCompetitors();
+                        connected = true;
+                        stateMessage = "Connected";
+                        return true;
+                    } else {
+                        stateMessage = "Server is unavailable";
+                    }
+                } catch (InterruptedException | ExecutionException e) {
+                    e.printStackTrace();
+                }
+            }
+        } else {
+            if (currentBattleRequestId == null) {
+                return true;
+            }
+            final BattleRequestState state = serverPort.getState(currentBattleRequestId);
+            enqueuedBattleRequests.get(currentBattleRequestId).state = state;
+            if (state.getState() == State.EXECUTED) {
+                final BattleRequest battleRequest = enqueuedBattleRequests.remove(currentBattleRequestId);
+                battleRequest.battleResults = serverPort.getBattleResults(currentBattleRequestId);
+                executedBattleRequestsBuffer.add(battleRequest);
+                currentBattleRequestId = null;
+                return true;
+            } else if (state.getState() == State.REJECTED) {
+                currentBattleRequestId = null;
+                enqueuedBattleRequests.remove(currentBattleRequestId);
+                return true;
+            }
         }
+
+        return false;
+    }
+
+    private void loadCompetitors() {
+        final List<Competitor> requiredCompetitors = new ArrayList<>();
+        final Map<String, byte[]> competitorsCode = new HashMap<>();
+        for (Bot bot : bots) {
+            requiredCompetitors.add(bot.getCompetitor());
+            competitorsCode.put(bot.getBotName() + bot.getBotVersion(), bot.getCode());
+        }
+
+        stateMessage = "Checking for missed competitors";
+        final List<Competitor> missedCompetitors = serverPort.getMissedCompetitors(requiredCompetitors);
+        for (Competitor competitor : missedCompetitors) {
+            registerCompetitor(competitor, competitorsCode.get(competitor.getName() + competitor.getVersion()));
+        }
+    }
+
+    private void registerCompetitor(Competitor competitor, byte[] code) {
+        stateMessage = String.format("Registering competitor %s %s\n", competitor.getName(), competitor.getVersion());
+        serverPort.registerCode(competitor, code);
     }
 
     public Collection<BattleRequest> flushExecutedBattleRequestsBuffer() {
@@ -77,10 +125,6 @@ public class RobocodeServerProxy {
     }
 
     public boolean hasResults() {
-        if (currentBattleRequestId != null) {
-            checkCurrentRequestState();
-        }
-
         return executedBattleRequestsBuffer.size() > 0;
     }
 
@@ -95,5 +139,18 @@ public class RobocodeServerProxy {
 
     public synchronized BattleRequest getCurrentBattleRequest() {
         return enqueuedBattleRequests.get(currentBattleRequestId);
+    }
+
+    public void setConnectingFuture(Future<RobocodeServer> connectingFuture) {
+        stateMessage = "Connecting";
+        this.connectingFuture = connectingFuture;
+    }
+
+    public String getStateMessage() {
+        return stateMessage;
+    }
+
+    public boolean isConnected() {
+        return connected;
     }
 }

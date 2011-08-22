@@ -86,6 +86,18 @@ public class BattleRequestManager {
         return new State(new ArrayList<>(pendingRequests), new ArrayList<>(executingRequests), new ArrayList<>(executedRequests));
     }
 
+    public double getAps() {
+        int totalScore = 0;
+        int challengerScore = 0;
+
+        for (BattleRequest br : executedRequests) {
+            challengerScore += br.battleResults.getCompetitorResults().get(0).getScore();
+            totalScore += br.battleResults.getCompetitorResults().get(0).getScore() + br.battleResults.getCompetitorResults().get(1).getScore();
+        }
+
+        return ((double)challengerScore) / totalScore * 100;
+    }
+
     public class State {
 
         public List<BattleRequest> pendingRequests;

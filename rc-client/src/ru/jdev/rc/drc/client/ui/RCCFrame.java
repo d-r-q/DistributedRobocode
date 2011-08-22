@@ -6,6 +6,7 @@ package ru.jdev.rc.drc.client.ui;
 
 import ru.jdev.rc.drc.client.*;
 import ru.jdev.rc.drc.server.Competitor;
+import ru.jdev.rc.drc.server.CompetitorResults;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -13,6 +14,7 @@ import java.awt.*;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
@@ -28,6 +30,7 @@ public class RCCFrame extends JFrame implements WindowListener {
     private final JPanel battleRequests = new JPanel();
     private final JPanel challengeResults = new JPanel();
     private final JPanel serversPanel = new JPanel();
+    private final JPanel infoPanel = new JPanel();
 
     private JTable resultsTable;
 
@@ -60,12 +63,13 @@ public class RCCFrame extends JFrame implements WindowListener {
         serversPanel.setPreferredSize(new Dimension(270, 1000));
         serversPanel.setLayout(new BoxLayout(serversPanel, BoxLayout.Y_AXIS));
 
-        challengeResults.setLayout(new GridLayout(1, 1));
-        final DefaultTableModel tableModel = new DefaultTableModel(new Object[][]{}, new Object[]{"Reference", "Score"});
+        challengeResults.setLayout(new GridLayout(2, 1));
+        final DefaultTableModel tableModel = new DefaultTableModel(new Object[][]{}, new Object[]{"Reference", "Challenger APS", "Challenger score", "Challenger bullet damage", "Refernce score", "Refernce bullet damage"});
         resultsTable = new JTable(tableModel);
         resultsTable.setShowGrid(true);
         final JScrollPane resultsTableScrollPane = new JScrollPane(resultsTable);
-        challengeResults.add(resultsTableScrollPane);
+        challengeResults.add(infoPanel, BorderLayout.NORTH);
+        challengeResults.add(resultsTableScrollPane, BorderLayout.CENTER);
 
         battleRequests.setLayout(new BoxLayout(battleRequests, BoxLayout.Y_AXIS));
         System.out.println(battleRequests.getBackground());
@@ -114,6 +118,42 @@ public class RCCFrame extends JFrame implements WindowListener {
                     updateBattleRequests(state);
                     updateChallengeResults(state);
                     updateServersPanel(proxyManager.getState());
+                    infoPanel.removeAll();
+                    infoPanel.setLayout(new GridLayout(4, 1));
+                    infoPanel.setPreferredSize(new Dimension(200, 200));
+                    infoPanel.setMinimumSize(new Dimension(200, 200));
+                    infoPanel.setMaximumSize(new Dimension(200, 200));
+
+                    JPanel challengerNamePanel = new JPanel();
+                    challengerNamePanel.setMinimumSize(new Dimension(100, 100));
+                    challengerNamePanel.setLayout(new BoxLayout(challengerNamePanel, BoxLayout.X_AXIS));
+                    infoPanel.add(challengerNamePanel);
+                    challengerNamePanel.add(new JLabel("Challenger: " + challenge.getChallenger().getBotName() + " " + challenge.getChallenger().getBotVersion()));
+
+                    JPanel apsPanel = new JPanel();
+                    apsPanel.setMinimumSize(new Dimension(100, 100));
+                    apsPanel.setLayout(new BoxLayout(apsPanel, BoxLayout.X_AXIS));
+                    infoPanel.add(apsPanel);
+                    apsPanel.add(new JLabel(String.format("APS: %3.2f", battleRequestManager.getAps())));
+
+                    JPanel elapsedTimePanel = new JPanel();
+                    elapsedTimePanel.setMinimumSize(new Dimension(100, 100));
+                    elapsedTimePanel.setLayout(new BoxLayout(elapsedTimePanel, BoxLayout.X_AXIS));
+                    infoPanel.add(elapsedTimePanel);
+                    if (robocodeClient.getStopTime() == -1) {
+                        elapsedTimePanel.add(new JLabel("Elapsed time: " + RobocodeClient.executionTimeDateFormat.format(new Date(System.currentTimeMillis() - robocodeClient.getStartTime()))));
+                    } else {
+                        elapsedTimePanel.add(new JLabel("Execution time: " + RobocodeClient.executionTimeDateFormat.format(new Date(robocodeClient.getStopTime() - robocodeClient.getStartTime()))));
+                    }
+
+                    JPanel remainingTimePanel = new JPanel();
+                    remainingTimePanel.setMinimumSize(new Dimension(100, 100));
+                    remainingTimePanel.setLayout(new BoxLayout(remainingTimePanel, BoxLayout.X_AXIS));
+                    infoPanel.add(remainingTimePanel);
+                    remainingTimePanel.add(new JLabel("Estimated remaining time: " + RobocodeClient.executionTimeDateFormat.format(new Date(robocodeClient.getEstimatedRemainingTime()))));
+
+                    infoPanel.validate();
+                    infoPanel.repaint();
                     try {
                         Thread.sleep(500);
                     } catch (InterruptedException e) {
@@ -135,7 +175,9 @@ public class RCCFrame extends JFrame implements WindowListener {
                 requestPanel.setLayout(new BoxLayout(requestPanel, BoxLayout.Y_AXIS));
                 final Competitor competitor = executingRequest.competitors.get(1);
                 requestPanel.add(new JLabel("Reference: " + competitor.getName() + " " + competitor.getVersion()));
-                requestPanel.add(new JLabel("    " + executingRequest.state.getMessage()));
+                if (executingRequest.state != null) {
+                    requestPanel.add(new JLabel("    " + executingRequest.state.getMessage()));
+                }
                 requestPanel.setMinimumSize(new Dimension(270, 34));
                 requestPanel.setMaximumSize(new Dimension(270, 34));
                 requestPanel.setPreferredSize(new Dimension(270, 34));
@@ -169,7 +211,14 @@ public class RCCFrame extends JFrame implements WindowListener {
             Vector<Vector<String>> rowData = new Vector<>();
             for (BattleRequest executedRequest : state.executedRequests) {
                 final Competitor competitor = executedRequest.competitors.get(1);
-                rowData.add(new Vector<>(Arrays.asList(competitor.getName() + " " + competitor.getVersion(), String.valueOf(executedRequest.battleResults.getCompetitorResults().get(0).getScore()))));
+                final CompetitorResults cr = executedRequest.battleResults.getCompetitorResults().get(0);
+                final CompetitorResults rr = executedRequest.battleResults.getCompetitorResults().get(1);
+                rowData.add(new Vector<>(Arrays.asList(competitor.getName() + " " + competitor.getVersion(),
+                        String.format("%3.2f", ((double)cr.getScore() / (double)(cr.getScore() + rr.getScore())) * 100),
+                        String.valueOf(cr.getScore()),
+                        String.valueOf(cr.getBulletDamage()),
+                        String.valueOf(rr.getScore()),
+                        String.valueOf(rr.getBulletDamage()))));
             }
 
             ((DefaultTableModel) resultsTable.getModel()).getDataVector().clear();
@@ -184,15 +233,20 @@ public class RCCFrame extends JFrame implements WindowListener {
             serversPanel.removeAll();
 
             for (ProxyManager.ProxyState state : states) {
-                System.out.println("add server panel");
                 final JPanel serverPanel = new JPanel();
-                serverPanel.setPreferredSize(new Dimension(270, 75));
-                serverPanel.setMinimumSize(new Dimension(270, 75));
-                serverPanel.setMaximumSize(new Dimension(270, 75));
+                if (state.isOnline) {
+                    serverPanel.setBackground(new Color(194, 237, 194));
+                } else {
+                    serverPanel.setBackground(new Color(237, 194, 194));
+                }
+                serverPanel.setPreferredSize(new Dimension(270, 82));
+                serverPanel.setMinimumSize(new Dimension(270, 82));
+                serverPanel.setMaximumSize(new Dimension(270, 82));
                 serverPanel.setLayout(new BoxLayout(serverPanel, BoxLayout.Y_AXIS));
                 serverPanel.setBorder(BorderFactory.createTitledBorder(state.url));
                 serverPanel.add(new JLabel("Bot: " + state.currentBot));
                 serverPanel.add(new JLabel("State: " + state.battleRequestState));
+                serverPanel.add(new JLabel(state.message));
                 serversPanel.add(serverPanel);
             }
 

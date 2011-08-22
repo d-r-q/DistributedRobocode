@@ -14,6 +14,9 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.jar.JarEntry;
+import java.util.jar.JarInputStream;
+import java.util.jar.JarOutputStream;
 
 public class BotsFactory {
 
@@ -58,18 +61,29 @@ public class BotsFactory {
 
     private byte[] getBotCode(String name, String version) throws IOException {
         final File competitorJar = new File(robotsDir + File.separator + name + "_" + version + ".jar");
-        byte[] competitorCode;
+        final ByteArrayOutputStream out = new ByteArrayOutputStream();
         try (
-                final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                final FileInputStream fis = new FileInputStream(competitorJar)
+                final JarInputStream jis = new JarInputStream(new FileInputStream(competitorJar));
+                final JarOutputStream jos = new JarOutputStream(out)
         ) {
-            byte[] buffer = new byte[1024 * 200];
-            int len;
-            while ((len = fis.read(buffer)) != -1) {
-                baos.write(buffer, 0, len);
+            JarEntry e;
+            while ((e = jis.getNextJarEntry()) != null) {
+                String eName = e.getName();
+                if (eName.endsWith(".java")) {
+                    continue;
+                }
+
+                jos.putNextEntry(e);
+                byte[] buff = new byte[1024];
+                int len;
+                while ((len = jis.read(buff)) != -1) {
+                    jos.write(buff, 0, len);
+                }
+                jos.closeEntry();
             }
-            competitorCode = baos.toByteArray();
+            jos.finish();
+            jos.flush();
+            return out.toByteArray();
         }
-        return competitorCode;
     }
 }

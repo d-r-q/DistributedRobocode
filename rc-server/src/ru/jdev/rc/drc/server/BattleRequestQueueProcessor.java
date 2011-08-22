@@ -46,7 +46,7 @@ public class BattleRequestQueueProcessor implements Runnable {
             } catch (Exception e) {
                 e.printStackTrace();
             } finally {
-                codeManager.cleanup();
+                //codeManager.cleanup();
             }
         }
     }
