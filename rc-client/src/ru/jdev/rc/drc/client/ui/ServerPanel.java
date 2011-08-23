@@ -44,7 +44,7 @@ public class ServerPanel extends JPanel implements ProxyListener {
 
         final BattleRequest currentRequest = proxy.getCurrentRequest();
         if (currentRequest != null) {
-            currentBotLabel.setText(String.format("Bot: %s %s", currentRequest.competitors.get(0).getName(), currentRequest.competitors.get(0).getVersion()));
+            currentBotLabel.setText(String.format("Bot: %s %s", currentRequest.competitors.get(1).getName(), currentRequest.competitors.get(1).getVersion()));
             requestStateLabel.setText(String.format("State: %s", currentRequest.state.getMessage()));
         } else {
             currentBotLabel.setText("Bot: --");
