@@ -36,7 +36,7 @@ public class Utils {
                     InputStream in = new FileInputStream(sourceLocation);
                     OutputStream out = new FileOutputStream(targetLocation)
             ) {
-                byte[] buf = new byte[1024];
+                byte[] buf = new byte[1024 * 1024];
                 int len;
                 while ((len = in.read(buf)) > 0) {
                     out.write(buf, 0, len);

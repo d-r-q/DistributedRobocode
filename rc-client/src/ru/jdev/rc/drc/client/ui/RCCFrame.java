@@ -4,7 +4,12 @@
 
 package ru.jdev.rc.drc.client.ui;
 
-import ru.jdev.rc.drc.client.*;
+import ru.jdev.rc.drc.client.BattleRequest;
+import ru.jdev.rc.drc.client.BattleRequestManager;
+import ru.jdev.rc.drc.client.Challenge;
+import ru.jdev.rc.drc.client.RobocodeClient;
+import ru.jdev.rc.drc.client.proxy.ProxyList;
+import ru.jdev.rc.drc.client.proxy.RobocodeServerProxy;
 import ru.jdev.rc.drc.server.Competitor;
 import ru.jdev.rc.drc.server.CompetitorResults;
 
@@ -15,14 +20,13 @@ import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 
 public class RCCFrame extends JFrame implements WindowListener {
 
     private final BattleRequestManager battleRequestManager;
-    private final ProxyManager proxyManager;
+    private final ProxyList proxyList;
     private final RobocodeClient robocodeClient;
     private final ExecutorService executorService;
     private final Challenge challenge;
@@ -34,9 +38,9 @@ public class RCCFrame extends JFrame implements WindowListener {
 
     private JTable resultsTable;
 
-    public RCCFrame(BattleRequestManager battleRequestManager, ProxyManager proxyManager, RobocodeClient robocodeClient, ExecutorService executorService, Challenge challenge) throws HeadlessException {
+    public RCCFrame(BattleRequestManager battleRequestManager, ProxyList proxyList, RobocodeClient robocodeClient, ExecutorService executorService, Challenge challenge) throws HeadlessException {
         this.battleRequestManager = battleRequestManager;
-        this.proxyManager = proxyManager;
+        this.proxyList = proxyList;
         this.robocodeClient = robocodeClient;
         this.executorService = executorService;
         this.challenge = challenge;
@@ -62,6 +66,13 @@ public class RCCFrame extends JFrame implements WindowListener {
         getContentPane().add(serversPanel, BorderLayout.EAST);
         serversPanel.setPreferredSize(new Dimension(270, 1000));
         serversPanel.setLayout(new BoxLayout(serversPanel, BoxLayout.Y_AXIS));
+
+        for (RobocodeServerProxy proxy : proxyList.getAvailableProxies()) {
+            final ServerPanel serverPanel = new ServerPanel(proxy);
+            serverPanel.init();
+            proxy.addListener(serverPanel);
+            serversPanel.add(serverPanel);
+        }
 
         challengeResults.setLayout(new GridLayout(2, 1));
         final DefaultTableModel tableModel = new DefaultTableModel(new Object[][]{}, new Object[]{"Reference", "Challenger APS", "Challenger score", "Challenger bullet damage", "Refernce score", "Refernce bullet damage"});
@@ -117,7 +128,6 @@ public class RCCFrame extends JFrame implements WindowListener {
                     BattleRequestManager.State state = battleRequestManager.getState();
                     updateBattleRequests(state);
                     updateChallengeResults(state);
-                    updateServersPanel(proxyManager.getState());
                     infoPanel.removeAll();
                     infoPanel.setLayout(new GridLayout(4, 1));
                     infoPanel.setPreferredSize(new Dimension(200, 200));
@@ -140,10 +150,10 @@ public class RCCFrame extends JFrame implements WindowListener {
                     elapsedTimePanel.setMinimumSize(new Dimension(100, 100));
                     elapsedTimePanel.setLayout(new BoxLayout(elapsedTimePanel, BoxLayout.X_AXIS));
                     infoPanel.add(elapsedTimePanel);
-                    if (robocodeClient.getStopTime() == -1) {
+                    if (robocodeClient.getFinishTime() == -1) {
                         elapsedTimePanel.add(new JLabel("Elapsed time: " + RobocodeClient.executionTimeDateFormat.format(new Date(System.currentTimeMillis() - robocodeClient.getStartTime()))));
                     } else {
-                        elapsedTimePanel.add(new JLabel("Execution time: " + RobocodeClient.executionTimeDateFormat.format(new Date(robocodeClient.getStopTime() - robocodeClient.getStartTime()))));
+                        elapsedTimePanel.add(new JLabel("Execution time: " + RobocodeClient.executionTimeDateFormat.format(new Date(robocodeClient.getFinishTime() - robocodeClient.getStartTime()))));
                     }
 
                     JPanel remainingTimePanel = new JPanel();
@@ -214,7 +224,7 @@ public class RCCFrame extends JFrame implements WindowListener {
                 final CompetitorResults cr = executedRequest.battleResults.getCompetitorResults().get(0);
                 final CompetitorResults rr = executedRequest.battleResults.getCompetitorResults().get(1);
                 rowData.add(new Vector<>(Arrays.asList(competitor.getName() + " " + competitor.getVersion(),
-                        String.format("%3.2f", ((double)cr.getScore() / (double)(cr.getScore() + rr.getScore())) * 100),
+                        String.format("%3.2f", ((double) cr.getScore() / (double) (cr.getScore() + rr.getScore())) * 100),
                         String.valueOf(cr.getScore()),
                         String.valueOf(cr.getBulletDamage()),
                         String.valueOf(rr.getScore()),
@@ -226,33 +236,6 @@ public class RCCFrame extends JFrame implements WindowListener {
 
             synchronized (challengeResults) {
                 ((DefaultTableModel) resultsTable.getModel()).fireTableDataChanged();
-            }
-        }
-
-        private void updateServersPanel(List<ProxyManager.ProxyState> states) {
-            serversPanel.removeAll();
-
-            for (ProxyManager.ProxyState state : states) {
-                final JPanel serverPanel = new JPanel();
-                if (state.isOnline) {
-                    serverPanel.setBackground(new Color(194, 237, 194));
-                } else {
-                    serverPanel.setBackground(new Color(237, 194, 194));
-                }
-                serverPanel.setPreferredSize(new Dimension(270, 82));
-                serverPanel.setMinimumSize(new Dimension(270, 82));
-                serverPanel.setMaximumSize(new Dimension(270, 82));
-                serverPanel.setLayout(new BoxLayout(serverPanel, BoxLayout.Y_AXIS));
-                serverPanel.setBorder(BorderFactory.createTitledBorder(state.url));
-                serverPanel.add(new JLabel("Bot: " + state.currentBot));
-                serverPanel.add(new JLabel("State: " + state.battleRequestState));
-                serverPanel.add(new JLabel(state.message));
-                serversPanel.add(serverPanel);
-            }
-
-            synchronized (serversPanel) {
-                serversPanel.validate();
-                serversPanel.repaint();
             }
         }
     }

@@ -32,8 +32,16 @@ public class RCBattlesExecutor implements IBattleListener {
         currentBattleRequest = battleRequest;
         currentBattleResults = null;
 
+        final RobotSpecification[] robotSpecs = getRobotSpecs(battleRequest.competitors);
+        for (RobotSpecification spec : robotSpecs) {
+            if (spec == null) {
+                currentBattleRequest.state.setState(BattleRequestState.State.REJECTED);
+                currentBattleRequest.state.setMessage("Cannot find specs for all competitors");
+                return null;
+            }
+        }
         final BattleSpecification battleSpecification = new BattleSpecification(battleRequest.rounds,
-                new BattlefieldSpecification(battleRequest.bfSpec.getBfWidth(), battleRequest.bfSpec.getBfHeight()), getRobotSpecs(battleRequest.competitors));
+                new BattlefieldSpecification(battleRequest.bfSpec.getBfWidth(), battleRequest.bfSpec.getBfHeight()), robotSpecs);
         currentBattleRequest.state.setState(BattleRequestState.State.EXECUTING);
         currentBattleRequest.state.setMessage("Starting battle");
         robocodeEngine.runBattle(battleSpecification);
@@ -57,13 +65,20 @@ public class RCBattlesExecutor implements IBattleListener {
         int specsIdx = 0;
         final RobotSpecification[] localRepository = robocodeEngine.getLocalRepository();
         for (Competitor competitor : competitors) {
+            boolean hasSpec = false;
             for (RobotSpecification spec : localRepository) {
                 if (spec.getNameAndVersion().equals(competitor.name + "* " + competitor.version) ||
                         spec.getNameAndVersion().equals(competitor.name + " " + competitor.version)) {
                     specs[specsIdx++] = spec;
+                    hasSpec = true;
                 }
             }
+
+            if (!hasSpec) {
+                System.out.printf("Cannot find spec for %s %s\n", competitor.name, competitor.version);
+            }
         }
+
 
         return specs;
     }
@@ -77,7 +92,7 @@ public class RCBattlesExecutor implements IBattleListener {
     }
 
     public void onBattleCompleted(BattleCompletedEvent battleCompletedEvent) {
-        currentBattleResults = battleCompletedEvent.getSortedResults();
+        currentBattleResults = battleCompletedEvent.getIndexedResults();
         System.out.println("Battle completed");
     }
 
