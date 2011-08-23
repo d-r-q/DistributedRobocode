@@ -98,6 +98,11 @@ public class BattleRequestManager {
         return ((double)challengerScore) / totalScore * 100;
     }
 
+    public void battleRequestRejected(BattleRequest battleRequest) {
+        executedRequests.remove(battleRequest);
+        pendingRequests.add(battleRequest);
+    }
+
     public class State {
 
         public List<BattleRequest> pendingRequests;

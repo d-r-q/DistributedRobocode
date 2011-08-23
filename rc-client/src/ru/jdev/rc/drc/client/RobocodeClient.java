@@ -4,12 +4,12 @@
 
 package ru.jdev.rc.drc.client;
 
+import ru.jdev.rc.drc.client.proxy.ProxyList;
 import ru.jdev.rc.drc.client.ui.RCCFrame;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
@@ -27,17 +27,15 @@ public class RobocodeClient {
     private static final String DISTRIBUTED_ROBOCODE_HEADER = "Distributed robocode challenge";
 
     private final BattleRequestManager battleRequestManager;
-    private final ProxyManager proxyManager;
-    private final ExecutorService service;
+    private final ProxyList proxyList;
 
     private long battlesExecutionStartTime = -1;
     private long startTime;
-    private long stopTime = -1;
+    private long finishTime = -1;
 
-    public RobocodeClient(BattleRequestManager battleRequestManager, ProxyManager proxyManager, ExecutorService service) throws IOException {
+    public RobocodeClient(BattleRequestManager battleRequestManager, ProxyList proxyList) throws IOException {
         this.battleRequestManager = battleRequestManager;
-        this.proxyManager = proxyManager;
-        this.service = service;
+        this.proxyList = proxyList;
 
         executionTimeDateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
     }
@@ -45,23 +43,22 @@ public class RobocodeClient {
     private void run() {
         startTime = System.currentTimeMillis();
 
-        BattleRequest requestToExecute;
+        proxyList.connectAllProxies();
         while (battleRequestManager.hasNotExecutedRequests()) {
-            final RobocodeServerProxy freeProxy = proxyManager.getFreeProxy();
-            checkProxies(proxyManager, battleRequestManager);
-            requestToExecute = battleRequestManager.getBattleRequest();
-            if (requestToExecute == null) {
+            if (battleRequestManager.getRemainingBattleRequests() < battleRequestManager.getTotalRequests() &&
+                    battlesExecutionStartTime == -1) {
+                battlesExecutionStartTime = System.currentTimeMillis();
+            }
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
                 break;
             }
 
-            if (battlesExecutionStartTime == -1) {
-                battlesExecutionStartTime = System.currentTimeMillis();
-            }
-            freeProxy.enqueueBattle(requestToExecute);
-
             System.out.println("Estimated remaining time: " + executionTimeDateFormat.format(new Date(getEstimatedRemainingTime())));
         }
-        stopTime = System.currentTimeMillis();
+        finishTime = System.currentTimeMillis();
 
         System.out.println("Challenge finished, execution time: " + executionTimeDateFormat.format(new Date(System.currentTimeMillis() - startTime)));
         System.out.printf("APS: %3.2f\n", battleRequestManager.getAps());
@@ -75,17 +72,6 @@ public class RobocodeClient {
         final long millisPerBattle = (System.currentTimeMillis() - battlesExecutionStartTime) / executedBattles;
 
         return battleRequestManager.getRemainingBattleRequests() * millisPerBattle;
-    }
-
-    private void checkProxies(ProxyManager proxyManager, BattleRequestManager battleRequestManager) {
-        System.out.println("Checking proxies...");
-        for (RobocodeServerProxy proxy : proxyManager.getAvailableProxies()) {
-            if (proxy.hasResults()) {
-                for (BattleRequest executedRequest : proxy.flushExecutedBattleRequestsBuffer()) {
-                    battleRequestManager.battleRequestExecuted(executedRequest);
-                }
-            }
-        }
     }
 
     private static Challenge parseChallenge(String challenger, String file, BotsFactory botsFactory) throws IOException {
@@ -115,9 +101,10 @@ public class RobocodeClient {
         }
         final ExecutorService executorService = Executors.newCachedThreadPool();
         final Challenge challenge = parseChallenge(argsList.get(0), argsList.get(1), new BotsFactory());
-        final RobocodeClient client = new RobocodeClient(new BattleRequestManager(challenge, Integer.parseInt(argsList.get(2))), new ProxyManager(executorService, challenge.getAllBots()), executorService);
+        final BattleRequestManager battleRequestManager = new BattleRequestManager(challenge, Integer.parseInt(argsList.get(2)));
+        final RobocodeClient client = new RobocodeClient(battleRequestManager, new ProxyList(executorService, challenge.getAllBots(), battleRequestManager));
         if (runUI) {
-            new RCCFrame(client.battleRequestManager, client.proxyManager, client, executorService, challenge).init();
+            new RCCFrame(client.battleRequestManager, client.proxyList, client, executorService, challenge).init();
         }
         client.run();
 
@@ -130,7 +117,7 @@ public class RobocodeClient {
         return startTime;
     }
 
-    public long getStopTime() {
-        return stopTime;
+    public long getFinishTime() {
+        return finishTime;
     }
 }

@@ -25,6 +25,8 @@ public class BattleRequest {
     public int remoteId;
     public RsBattleResults battleResults;
     public BattleRequestState state;
+    public long requestStartExecutingTime;
+    public int currentRound;
 
     public BattleRequest(List<Competitor> competitors, BfSpec bfSpec, int rounds) {
         this.competitors = competitors;

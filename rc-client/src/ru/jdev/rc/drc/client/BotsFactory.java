@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 import java.util.jar.JarOutputStream;
+import java.util.zip.ZipEntry;
 
 public class BotsFactory {
 
@@ -73,7 +74,10 @@ public class BotsFactory {
                     continue;
                 }
 
-                jos.putNextEntry(e);
+                final JarEntry ze = new JarEntry(eName);
+                ze.setTime(e.getTime());
+                ze.setMethod(ZipEntry.DEFLATED);
+                jos.putNextEntry(ze);
                 byte[] buff = new byte[1024];
                 int len;
                 while ((len = jis.read(buff)) != -1) {
@@ -86,4 +90,13 @@ public class BotsFactory {
             return out.toByteArray();
         }
     }
+
+    private StringBuffer getCheckSum(byte[] code) {
+        StringBuffer checkSum = new StringBuffer();
+        for (Byte b : code) {
+            checkSum.append(Integer.toHexString(0xFF & b));
+        }
+        return checkSum;
+    }
+
 }
