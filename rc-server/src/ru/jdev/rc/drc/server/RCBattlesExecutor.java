@@ -15,7 +15,7 @@ import java.io.File;
 
 public class RCBattlesExecutor implements IBattleListener {
 
-    private final RobocodeEngine robocodeEngine;
+    private RobocodeEngine robocodeEngine;
 
     private BattleResults[] currentBattleResults;
     private BattleRequest currentBattleRequest;
@@ -25,6 +25,7 @@ public class RCBattlesExecutor implements IBattleListener {
     public RCBattlesExecutor() {
         this.robocodeEngine = new RobocodeEngine(new File(".\\rc\\"));
         robocodeEngine.addBattleListener(this);
+        robocodeEngine.getLocalRepository();
     }
 
     public synchronized RSBattleResults executeBattle(BattleRequest battleRequest) {

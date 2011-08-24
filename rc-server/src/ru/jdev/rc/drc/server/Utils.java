@@ -32,15 +32,19 @@ public class Utils {
             }
         } else {
 
-            try (
-                    InputStream in = new FileInputStream(sourceLocation);
-                    OutputStream out = new FileOutputStream(targetLocation)
-            ) {
-                byte[] buf = new byte[1024 * 1024];
-                int len;
-                while ((len = in.read(buf)) > 0) {
-                    out.write(buf, 0, len);
-                }
+            copyFile(sourceLocation, targetLocation);
+        }
+    }
+
+    public static void copyFile(File sourceLocation, File targetLocation) throws IOException {
+        try (
+                InputStream in = new FileInputStream(sourceLocation);
+                OutputStream out = new FileOutputStream(targetLocation)
+        ) {
+            byte[] buf = new byte[1024 * 1024];
+            int len;
+            while ((len = in.read(buf)) > 0) {
+                out.write(buf, 0, len);
             }
         }
     }

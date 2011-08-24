@@ -74,12 +74,18 @@ public class RCCFrame extends JFrame implements WindowListener {
             serversPanel.add(serverPanel);
         }
 
-        challengeResults.setLayout(new GridLayout(2, 1));
+        challengeResults.setLayout(new BoxLayout(challengeResults, BoxLayout.Y_AXIS));
         final DefaultTableModel tableModel = new DefaultTableModel(new Object[][]{}, new Object[]{"Reference", "Challenger APS", "Challenger score", "Challenger bullet damage", "Refernce score", "Refernce bullet damage"});
         resultsTable = new JTable(tableModel);
         resultsTable.setShowGrid(true);
         final JScrollPane resultsTableScrollPane = new JScrollPane(resultsTable);
+        infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
+        infoPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 100));
+        infoPanel.setPreferredSize(new Dimension(Integer.MAX_VALUE, 100));
+        infoPanel.setMinimumSize(new Dimension(Integer.MAX_VALUE, 100));
+        infoPanel.setBorder(BorderFactory.createTitledBorder("Info"));
         challengeResults.add(infoPanel, BorderLayout.NORTH);
+        resultsTableScrollPane.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
         challengeResults.add(resultsTableScrollPane, BorderLayout.CENTER);
 
         battleRequests.setLayout(new BoxLayout(battleRequests, BoxLayout.Y_AXIS));
@@ -129,38 +135,15 @@ public class RCCFrame extends JFrame implements WindowListener {
                     updateBattleRequests(state);
                     updateChallengeResults(state);
                     infoPanel.removeAll();
-                    infoPanel.setLayout(new GridLayout(4, 1));
-                    infoPanel.setPreferredSize(new Dimension(200, 200));
-                    infoPanel.setMinimumSize(new Dimension(200, 200));
-                    infoPanel.setMaximumSize(new Dimension(200, 200));
 
-                    JPanel challengerNamePanel = new JPanel();
-                    challengerNamePanel.setMinimumSize(new Dimension(100, 100));
-                    challengerNamePanel.setLayout(new BoxLayout(challengerNamePanel, BoxLayout.X_AXIS));
-                    infoPanel.add(challengerNamePanel);
-                    challengerNamePanel.add(new JLabel("Challenger: " + challenge.getChallenger().getBotName() + " " + challenge.getChallenger().getBotVersion()));
-
-                    JPanel apsPanel = new JPanel();
-                    apsPanel.setMinimumSize(new Dimension(100, 100));
-                    apsPanel.setLayout(new BoxLayout(apsPanel, BoxLayout.X_AXIS));
-                    infoPanel.add(apsPanel);
-                    apsPanel.add(new JLabel(String.format("APS: %3.2f", battleRequestManager.getAps())));
-
-                    JPanel elapsedTimePanel = new JPanel();
-                    elapsedTimePanel.setMinimumSize(new Dimension(100, 100));
-                    elapsedTimePanel.setLayout(new BoxLayout(elapsedTimePanel, BoxLayout.X_AXIS));
-                    infoPanel.add(elapsedTimePanel);
+                    infoPanel.add(new JLabel("Challenger: " + challenge.getChallenger().getBotName() + " " + challenge.getChallenger().getBotVersion()));
+                    infoPanel.add(new JLabel(String.format("APS: %3.2f", battleRequestManager.getAps())));
                     if (robocodeClient.getFinishTime() == -1) {
-                        elapsedTimePanel.add(new JLabel("Elapsed time: " + RobocodeClient.executionTimeDateFormat.format(new Date(System.currentTimeMillis() - robocodeClient.getStartTime()))));
+                        infoPanel.add(new JLabel("Elapsed time: " + RobocodeClient.executionTimeDateFormat.format(new Date(System.currentTimeMillis() - robocodeClient.getStartTime()))));
                     } else {
-                        elapsedTimePanel.add(new JLabel("Execution time: " + RobocodeClient.executionTimeDateFormat.format(new Date(robocodeClient.getFinishTime() - robocodeClient.getStartTime()))));
+                        infoPanel.add(new JLabel("Execution time: " + RobocodeClient.executionTimeDateFormat.format(new Date(robocodeClient.getFinishTime() - robocodeClient.getStartTime()))));
                     }
-
-                    JPanel remainingTimePanel = new JPanel();
-                    remainingTimePanel.setMinimumSize(new Dimension(100, 100));
-                    remainingTimePanel.setLayout(new BoxLayout(remainingTimePanel, BoxLayout.X_AXIS));
-                    infoPanel.add(remainingTimePanel);
-                    remainingTimePanel.add(new JLabel("Estimated remaining time: " + RobocodeClient.executionTimeDateFormat.format(new Date(robocodeClient.getEstimatedRemainingTime()))));
+                    infoPanel.add(new JLabel("Estimated remaining time: " + RobocodeClient.executionTimeDateFormat.format(new Date(robocodeClient.getEstimatedRemainingTime()))));
 
                     infoPanel.validate();
                     infoPanel.repaint();
@@ -219,7 +202,8 @@ public class RCCFrame extends JFrame implements WindowListener {
         private void updateChallengeResults(BattleRequestManager.State state) {
 
             Vector<Vector<String>> rowData = new Vector<>();
-            for (BattleRequest executedRequest : state.executedRequests) {
+            for (int i = state.executedRequests.size() - 1; i >= 0; i--) {
+                BattleRequest executedRequest = state.executedRequests.get(i);
                 final Competitor competitor = executedRequest.competitors.get(1);
                 final CompetitorResults cr = executedRequest.battleResults.getCompetitorResults().get(0);
                 final CompetitorResults rr = executedRequest.battleResults.getCompetitorResults().get(1);

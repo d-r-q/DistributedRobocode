@@ -47,8 +47,6 @@ public class BattleRequestQueueProcessor implements Runnable {
                 battleResultsBuffer.addBattleResult(request.getRequestId(), rsBattleResults);
             } catch (Exception e) {
                 e.printStackTrace();
-            } finally {
-                //codeManager.cleanup();
             }
         }
     }
@@ -58,7 +56,10 @@ public class BattleRequestQueueProcessor implements Runnable {
         request.state.setMessage("Load competitors");
         for (Competitor competitor : request.competitors) {
             try {
+                System.out.printf("Loading competitor %s %s...", competitor.name, competitor.version);
+                long startTime = System.currentTimeMillis();
                 codeManager.loadCompetitor(competitor);
+                System.out.println(" Loaded, load time: " + (System.currentTimeMillis() - startTime));
             } catch (IOException e) {
                 request.state.setState(BattleRequestState.State.REJECTED);
                 request.state.setMessage(e.getMessage());

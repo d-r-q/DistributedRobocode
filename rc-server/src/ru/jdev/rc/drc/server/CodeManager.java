@@ -4,69 +4,50 @@
 
 package ru.jdev.rc.drc.server;
 
-import java.io.*;
+import net.sf.robocode.core.ContainerBase;
+import net.sf.robocode.repository.IRepositoryManagerBase;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.jar.JarEntry;
-import java.util.jar.JarInputStream;
 
 public class CodeManager {
 
-    private static final File robotsDirectory = new File("." + File.separator + "rc" + File.separator + "dev_path");
+    private static final File devPathDirectory = new File("." + File.separator + "rc" + File.separator + "dev_path");
+    private static final File robotsDirectory = new File("." + File.separator + "rc" + File.separator + "robots");
     private static final File repositoryDirectory = new File("." + File.separator + "rs_repository");
 
     private final Map<String, byte[]> loadedCode = new HashMap<>();
 
     public void storeCompetitor(Competitor competitor, byte[] code) throws java.io.IOException {
-        final File competitorCodeDir = getCompetitorDir(repositoryDirectory, competitor);
-        if (competitorCodeDir.exists()) {
+        final File competitorJarFile = getCompetitorJarFile(repositoryDirectory, competitor);
+        if (competitorJarFile.exists()) {
             return;
         }
         long startTime = System.currentTimeMillis();
         try (
-                final JarInputStream jis = new JarInputStream(new ByteArrayInputStream(code))
+                final FileOutputStream fos = new FileOutputStream(competitorJarFile)
         ) {
-            JarEntry e;
-            while ((e = jis.getNextJarEntry()) != null) {
-                String eName = e.getName();
-                int idx = eName.lastIndexOf("/");
-
-                final File dir = new File(competitorCodeDir.getAbsolutePath() + File.separator + eName.substring(0, idx));
-                if (!dir.exists()) {
-                    if (!dir.mkdirs()) {
-                        throw new java.io.IOException("Cannot create dir " + dir.getCanonicalPath());
-                    }
-                }
-
-                if (idx != eName.length() - 1) {
-                    try (
-                            final FileOutputStream fos = new FileOutputStream(new File(dir.getAbsolutePath() + File.separator + eName.substring(idx + 1)))
-                    ) {
-                        byte[] buff = new byte[1024];
-                        int len;
-                        while ((len = jis.read(buff)) != -1) {
-                            fos.write(buff, 0, len);
-                        }
-                    }
-                }
-            }
+            fos.write(code);
         }
 
         System.out.println("Store time: " + (System.currentTimeMillis() - startTime));
     }
 
     public boolean hasCompetitor(Competitor competitor) {
-        final File competitorCodeDir = getCompetitorDir(repositoryDirectory, competitor);
+        final File competitorCodeDir = getCompetitorJarFile(repositoryDirectory, competitor);
         return competitorCodeDir.exists();
     }
 
-    private File getCompetitorDir(File root, Competitor competitor) {
+    private File getCompetitorJarFile(File root, Competitor competitor) {
         StringBuffer checkSum = new StringBuffer();
         for (Byte b : competitor.codeCheckSum) {
             checkSum.append(Integer.toHexString(0xFF & b));
         }
-        return new File(root + File.separator + competitor.name + "_" + competitor.version + File.separator + new String(checkSum));
+        return new File(root + File.separator + new String(checkSum));
     }
 
     public void loadCompetitor(Competitor competitor) throws java.io.IOException {
@@ -74,17 +55,25 @@ public class CodeManager {
         if (loadedVersion != null && Arrays.equals(loadedVersion, competitor.codeCheckSum)) {
             return;
         }
-        final File competitorDir = getCompetitorDir(repositoryDirectory, competitor);
-        if (!competitorDir.exists()) {
+
+        final File competitorJarFile = getCompetitorJarFile(repositoryDirectory, competitor);
+        if (!competitorJarFile.exists()) {
             throw new CompetitorNotFoundException("Competitor " + competitor + " not found", competitor);
         }
 
-        Utils.copyDirectory(competitorDir, robotsDirectory);
+        Utils.copyFile(competitorJarFile, new File(robotsDirectory.getAbsolutePath() + File.separator + competitor.name + "_" + competitor.version + ".jar"));
         loadedCode.put(competitor.name + competitor.version, competitor.codeCheckSum);
+
+        reloadRobotsDataBase();
     }
 
-    public void cleanup() {
-        Utils.clearDir(robotsDirectory);
+    public void reloadRobotsDataBase() {
+        final IRepositoryManagerBase repository = ContainerBase.getComponent(IRepositoryManagerBase.class);
+        try {
+            repository.getClass().getMethod("reload", boolean.class).invoke(repository, Boolean.TRUE);
+        } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+            e.printStackTrace();
+        }
     }
 
 }
