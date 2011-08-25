@@ -4,6 +4,7 @@
 
 package ru.jdev.rc.drc.server;
 
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -48,7 +49,7 @@ public class BattleRequestsQueue {
         return res;
     }
 
-    private BattleRequest getBattleRequest() {
+    public synchronized BattleRequest getBattleRequest() {
         final BattleRequest res;
         if (priorityQueue.size() > 0) {
             res = priorityQueue.remove(0);
@@ -75,4 +76,40 @@ public class BattleRequestsQueue {
         }
     }
 
+    public synchronized BattleRequest peak() {
+        final BattleRequest res;
+        if (priorityQueue.size() > 0) {
+            res = priorityQueue.get(0);
+        } else if (commonQueue.size() > 0) {
+            res = commonQueue.get(0);
+        } else {
+            res = null;
+        }
+        return res;
+    }
+
+    public synchronized boolean remove(Integer battleRequestId) {
+        boolean isRemoved = false;
+        for (Iterator<BattleRequest> priorityQueueIter = priorityQueue.iterator(); priorityQueueIter.hasNext(); ) {
+            if (priorityQueueIter.next().requestId == battleRequestId) {
+                priorityQueueIter.remove();
+                isRemoved = true;
+                break;
+            }
+        }
+
+        for (Iterator<BattleRequest> commonQueueIter = commonQueue.iterator(); commonQueueIter.hasNext(); ) {
+            if (commonQueueIter.next().requestId == battleRequestId) {
+                commonQueueIter.remove();
+                isRemoved = true;
+                break;
+            }
+        }
+
+        if (isRemoved) {
+            resetQueueOrder();
+        }
+
+        return isRemoved;
+    }
 }

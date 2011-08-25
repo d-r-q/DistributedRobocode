@@ -15,27 +15,6 @@ public class Utils {
     private Utils() {
     }
 
-    public static void copyDirectory(File sourceLocation, File targetLocation)
-            throws java.io.IOException {
-
-        if (sourceLocation.isDirectory()) {
-            if (!targetLocation.exists()) {
-                if (!targetLocation.mkdir()) {
-                    throw new java.io.IOException("Cannot create dir " + targetLocation.getCanonicalPath());
-                }
-            }
-
-            String[] children = sourceLocation.list();
-            for (String aChildren : children) {
-                copyDirectory(new File(sourceLocation, aChildren),
-                        new File(targetLocation, aChildren));
-            }
-        } else {
-
-            copyFile(sourceLocation, targetLocation);
-        }
-    }
-
     public static void copyFile(File sourceLocation, File targetLocation) throws IOException {
         try (
                 InputStream in = new FileInputStream(sourceLocation);
@@ -46,36 +25,8 @@ public class Utils {
             while ((len = in.read(buf)) > 0) {
                 out.write(buf, 0, len);
             }
+            out.flush();
         }
-    }
-
-    public static boolean deleteDir(File dir) {
-        if (dir.isDirectory()) {
-            String[] children = dir.list();
-            for (String aChildren : children) {
-                boolean success = deleteDir(new File(dir, aChildren));
-                if (!success) {
-                    return false;
-                }
-            }
-        }
-
-        // The directory is now empty so delete it
-        return dir.delete();
-    }
-
-    public static boolean clearDir(File dir) {
-        if (dir.isDirectory()) {
-            String[] children = dir.list();
-            for (String aChildren : children) {
-                boolean success = deleteDir(new File(dir, aChildren));
-                if (!success) {
-                    return false;
-                }
-            }
-        }
-
-        return true;
     }
 
 }

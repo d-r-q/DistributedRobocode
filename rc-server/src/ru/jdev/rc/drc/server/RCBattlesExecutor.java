@@ -21,14 +21,14 @@ public class RCBattlesExecutor implements IBattleListener {
     private BattleRequest currentBattleRequest;
 
     private long finishTime;
+    private volatile boolean isBattleStarted = false;
 
     public RCBattlesExecutor() {
         this.robocodeEngine = new RobocodeEngine(new File(".\\rc\\"));
         robocodeEngine.addBattleListener(this);
-        robocodeEngine.getLocalRepository();
     }
 
-    public synchronized RSBattleResults executeBattle(BattleRequest battleRequest) {
+    public synchronized boolean startBattle(BattleRequest battleRequest) {
         System.out.println("Not working time: " + (System.currentTimeMillis() - finishTime));
         currentBattleRequest = battleRequest;
         currentBattleResults = null;
@@ -38,7 +38,7 @@ public class RCBattlesExecutor implements IBattleListener {
             if (spec == null) {
                 currentBattleRequest.state.setState(BattleRequestState.State.REJECTED);
                 currentBattleRequest.state.setMessage("Cannot find specs for all competitors");
-                return null;
+                return false;
             }
         }
         final BattleSpecification battleSpecification = new BattleSpecification(battleRequest.rounds,
@@ -46,7 +46,28 @@ public class RCBattlesExecutor implements IBattleListener {
         currentBattleRequest.state.setState(BattleRequestState.State.EXECUTING);
         currentBattleRequest.state.setMessage("Starting battle");
         robocodeEngine.runBattle(battleSpecification);
+        System.out.printf("Executing battle %s vs %s\n", robotSpecs[0].getNameAndVersion(), robotSpecs[1].getNameAndVersion());
+
+        while (!isBattleStarted) {
+            try {
+                wait();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+                break;
+            }
+        }
+
+        return true;
+    }
+
+    public RSBattleResults getResults() {
         robocodeEngine.waitTillBattleOver();
+
+        if (currentBattleResults == null) {
+            currentBattleRequest.state.setMessage("Battle cancelled");
+            currentBattleRequest.state.setState(BattleRequestState.State.REJECTED);
+            return null;
+        }
 
         CompetitorResults[] compRess = new CompetitorResults[currentBattleResults.length];
         int idx = 0;
@@ -80,32 +101,46 @@ public class RCBattlesExecutor implements IBattleListener {
             }
         }
 
-
         return specs;
     }
 
-    public void onBattleStarted(BattleStartedEvent battleStartedEvent) {
-        System.out.println("Battle started");
+    public synchronized boolean cancelIfStarted(Integer battleRequestId) {
+        if (currentBattleRequest != null && currentBattleRequest.requestId == battleRequestId) {
+            System.out.println("Aborting current battle");
+            robocodeEngine.abortCurrentBattle();
+            return true;
+        }
+
+        return false;
     }
 
     public void onBattleFinished(BattleFinishedEvent battleFinishedEvent) {
         System.out.println("Battle finished");
+        isBattleStarted = false;
     }
 
     public void onBattleCompleted(BattleCompletedEvent battleCompletedEvent) {
         currentBattleResults = battleCompletedEvent.getIndexedResults();
-        System.out.println("Battle completed");
+    }
+
+    public void onRoundStarted(RoundStartedEvent roundStartedEvent) {
+        currentBattleRequest.state.setState(BattleRequestState.State.EXECUTING);
+        currentBattleRequest.state.setMessage("Round: " + roundStartedEvent.getRound());
+        if (roundStartedEvent.getRound() == 0) {
+            synchronized (this) {
+                isBattleStarted = true;
+                notifyAll();
+            }
+        }
+    }
+
+    public void onBattleStarted(BattleStartedEvent battleStartedEvent) {
     }
 
     public void onBattlePaused(BattlePausedEvent battlePausedEvent) {
     }
 
     public void onBattleResumed(BattleResumedEvent battleResumedEvent) {
-    }
-
-    public void onRoundStarted(RoundStartedEvent roundStartedEvent) {
-        currentBattleRequest.state.setState(BattleRequestState.State.EXECUTING);
-        currentBattleRequest.state.setMessage("Round: " + roundStartedEvent.getRound());
     }
 
     public void onRoundEnded(RoundEndedEvent roundEndedEvent) {

@@ -37,8 +37,13 @@ public class BattleRequestQueueProcessor implements Runnable {
             }
 
             try {
-                loadCompetitors(request);
-                final RSBattleResults rsBattleResults = rcBattlesExecutor.executeBattle(request);
+                if (!request.isCompetitorsLoaded) {
+                    loadCompetitors(request);
+                }
+                rcBattlesExecutor.startBattle(request);
+                codeManager.cleanup();
+                prepareNextBattle();
+                final RSBattleResults rsBattleResults = rcBattlesExecutor.getResults();
                 if (rsBattleResults != null) {
                     rsBattleResults.requestId = request.requestId;
                     request.state.setState(BattleRequestState.State.EXECUTED);
@@ -51,20 +56,25 @@ public class BattleRequestQueueProcessor implements Runnable {
         }
     }
 
+    private void prepareNextBattle() {
+        final BattleRequest nextRequest = battleRequestsQueue.peak();
+        if (nextRequest != null) {
+            loadCompetitors(nextRequest);
+        }
+    }
+
     private void loadCompetitors(BattleRequest request) {
         request.state.setState(BattleRequestState.State.EXECUTING);
-        request.state.setMessage("Load competitors");
         for (Competitor competitor : request.competitors) {
             try {
-                System.out.printf("Loading competitor %s %s...", competitor.name, competitor.version);
-                long startTime = System.currentTimeMillis();
                 codeManager.loadCompetitor(competitor);
-                System.out.println(" Loaded, load time: " + (System.currentTimeMillis() - startTime));
             } catch (IOException e) {
                 request.state.setState(BattleRequestState.State.REJECTED);
                 request.state.setMessage(e.getMessage());
             }
         }
+
+        codeManager.reloadRobotsDataBase();
     }
 
     public void stop() {

@@ -14,6 +14,7 @@ public class BattleRequest {
     public final BFSpec bfSpec;
 
     public BattleRequestState state = new BattleRequestState();
+    public boolean isCompetitorsLoaded = false;
 
     public BattleRequest(int battleRequestId, String secureToken, Competitor[] competitors,
                          int rounds, BFSpec bfSpec) {

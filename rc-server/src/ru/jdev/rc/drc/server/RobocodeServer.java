@@ -23,14 +23,14 @@ public class RobocodeServer {
 
     private final Map<Integer, BattleRequest> battleRequests = new HashMap<>();
 
-    private final CodeManager codeManager = new CodeManager();
-
+    private CodeManager codeManager;
     private BattleRequestsQueue battleRequestsQueue;
     private BattleResultsBuffer battleResultsBuffer;
     private BattleRequestQueueProcessor processor;
 
     private final Object brsLock = new Object();
     private int battleRequestsSequence = 0;
+    private RCBattlesExecutor executor;
 
     public RobocodeServer() {
     }
@@ -38,7 +38,10 @@ public class RobocodeServer {
     private void init(String authToken) {
         battleRequestsQueue = new BattleRequestsQueue(authToken);
         battleResultsBuffer = new BattleResultsBuffer();
-        final RCBattlesExecutor executor = new RCBattlesExecutor();
+        // some robocode's loading voodoo - robocodeEngine must be started before
+        // code manager, for code manager can retrieve link to RepositoryManager
+        executor = new RCBattlesExecutor();
+        codeManager = new CodeManager();
         processor = new BattleRequestQueueProcessor(battleRequestsQueue, executor, codeManager, battleResultsBuffer);
         Executors.newSingleThreadExecutor().execute(processor);
     }
@@ -72,6 +75,22 @@ public class RobocodeServer {
         }
     }
 
+    public boolean registerCodes(List<Competitor> competitors, List<byte[]> codes) {
+        try {
+            if (competitors.size() != codes.size()) {
+                return false;
+            }
+            for (int i = 0; i < competitors.size(); i++) {
+                codeManager.storeCompetitor(competitors.get(i), codes.get(i));
+            }
+
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
     @WebMethod
     public Integer executeBattle(Competitor[] competitors, BFSpec bfSpec, int rounds, String authToken) {
         final int battleRequestId;
@@ -92,6 +111,20 @@ public class RobocodeServer {
     @WebMethod
     public RSBattleResults getBattleResults(Integer battleRequestId) {
         return battleResultsBuffer.getResults(battleRequestId);
+    }
+
+    @WebMethod
+    public void cancelRequest(Integer battleRequestId) {
+        System.out.println("Cancel request: " + battleRequestId);
+        // there're possibility, when battle request is already fetched from queue, but not yet started
+        // and in this case battle request will executed anyway
+        if (battleRequestsQueue.remove(battleRequestId)) {
+            System.out.println("Removed from queue");
+        } else if (executor.cancelIfStarted(battleRequestId)) {
+            System.out.println("Cancelled executing battle");
+        } else {
+            System.out.println("Cancellation failed");
+        }
     }
 
     public static void main(String[] args) throws IOException {
