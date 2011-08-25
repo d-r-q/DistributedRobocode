@@ -33,7 +33,7 @@ public class RCCFrame extends JFrame implements WindowListener {
     private final ExecutorService executorService;
     private final Challenge challenge;
 
-    private final JPanel battleRequests = new JPanel();
+    private final QueuePanel queuePanel;
     private final JPanel challengeResults = new JPanel();
     private final JPanel serversPanel = new JPanel();
     private final JPanel infoPanel = new JPanel();
@@ -46,6 +46,9 @@ public class RCCFrame extends JFrame implements WindowListener {
         this.robocodeClient = robocodeClient;
         this.executorService = executorService;
         this.challenge = challenge;
+
+        this.queuePanel = new QueuePanel(battleRequestManager.getPendingRequests());
+        battleRequestManager.addListener(queuePanel);
     }
 
     public void init() {
@@ -60,10 +63,7 @@ public class RCCFrame extends JFrame implements WindowListener {
         setDefaultCloseOperation(EXIT_ON_CLOSE);
 
         setLayout(new BorderLayout());
-        final JScrollPane battleRequestsScrollPane = new JScrollPane(battleRequests);
-        battleRequestsScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        battleRequestsScrollPane.setPreferredSize(new Dimension(270, -1));
-        getContentPane().add(battleRequestsScrollPane, BorderLayout.WEST);
+        getContentPane().add(queuePanel, BorderLayout.WEST);
         getContentPane().add(challengeResults, BorderLayout.CENTER);
         getContentPane().add(serversPanel, BorderLayout.EAST);
         serversPanel.setPreferredSize(new Dimension(270, 1000));
@@ -93,8 +93,7 @@ public class RCCFrame extends JFrame implements WindowListener {
         resultsTableScrollPane.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
         challengeResults.add(resultsTableScrollPane, BorderLayout.CENTER);
 
-        battleRequests.setLayout(new BoxLayout(battleRequests, BoxLayout.Y_AXIS));
-        System.out.println(battleRequests.getBackground());
+        queuePanel.setPreferredSize(new Dimension(370, 1000));
 
         executorService.submit(new StateUpdater());
 
@@ -150,7 +149,7 @@ public class RCCFrame extends JFrame implements WindowListener {
             while (true) {
                 try {
                     BattleRequestManager.State state = battleRequestManager.getState();
-                    updateBattleRequests(state);
+                    //updateBattleRequests(state);
                     updateChallengeResults(state);
                     infoPanel.removeAll();
 
@@ -177,12 +176,12 @@ public class RCCFrame extends JFrame implements WindowListener {
         }
 
         private void updateBattleRequests(BattleRequestManager.State state) {
-            battleRequests.removeAll();
-            battleRequests.setLayout(new BoxLayout(battleRequests, BoxLayout.Y_AXIS));
+            queuePanel.removeAll();
+            queuePanel.setLayout(new BoxLayout(queuePanel, BoxLayout.Y_AXIS));
 
             for (BattleRequest executingRequest : state.executingRequests) {
                 final JPanel requestPanel = new JPanel();
-                battleRequests.add(requestPanel);
+                queuePanel.add(requestPanel);
                 requestPanel.setLayout(new BoxLayout(requestPanel, BoxLayout.Y_AXIS));
                 final Competitor competitor = executingRequest.competitors.get(1);
                 requestPanel.add(new JLabel("Reference: " + competitor.getName() + " " + competitor.getVersion()));
@@ -198,7 +197,7 @@ public class RCCFrame extends JFrame implements WindowListener {
             int idx = 1;
             for (BattleRequest pendingRequest : state.pendingRequests) {
                 final JPanel requestPanel = new JPanel();
-                battleRequests.add(requestPanel);
+                queuePanel.add(requestPanel);
                 requestPanel.setLayout(new BoxLayout(requestPanel, BoxLayout.Y_AXIS));
                 final Competitor competitor = pendingRequest.competitors.get(1);
                 requestPanel.add(new JLabel(idx + ". Reference: " + competitor.getName() + " " + competitor.getVersion()));
@@ -210,10 +209,10 @@ public class RCCFrame extends JFrame implements WindowListener {
                 idx++;
             }
 
-            synchronized (battleRequests) {
-                battleRequests.getParent().invalidate();
-                battleRequests.validate();
-                battleRequests.repaint();
+            synchronized (queuePanel) {
+                queuePanel.getParent().invalidate();
+                queuePanel.validate();
+                queuePanel.repaint();
             }
         }
 

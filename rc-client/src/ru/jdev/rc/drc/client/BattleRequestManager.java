@@ -4,6 +4,7 @@
 
 package ru.jdev.rc.drc.client;
 
+import ru.jdev.rc.drc.client.ui.QueuePanel;
 import ru.jdev.rc.drc.server.BfSpec;
 
 import java.util.ArrayList;
@@ -16,9 +17,12 @@ import java.util.List;
  */
 public class BattleRequestManager {
 
+    private final List<BattleRequestManagerListener> listeners = new ArrayList<>();
+
     private final List<BattleRequest> pendingRequests = new ArrayList<>();
     private final List<BattleRequest> executingRequests = new ArrayList<>();
     private final List<BattleRequest> executedRequests = new ArrayList<>();
+
     private int totalRequests;
 
     public BattleRequestManager(Challenge challenge, int seasons) {
@@ -42,17 +46,21 @@ public class BattleRequestManager {
 
     public synchronized BattleRequest getBattleRequest() {
         if (pendingRequests.size() > 0) {
-            final BattleRequest request = pendingRequests.remove(0);
-            executingRequests.add(request);
-            return request;
+            return pendingRequests.remove(0);
         }
 
         return null;
     }
 
+    public synchronized void battleRequestSubmitted(BattleRequest request) {
+        executingRequests.add(request);
+        notifyListeners(request, Event.SUBMITTED);
+    }
+
     public synchronized void battleRequestExecuted(BattleRequest battleRequest) {
         executedRequests.add(battleRequest);
         executingRequests.remove(battleRequest);
+        notifyListeners(battleRequest, Event.EXECUTED);
     }
 
     @Override
@@ -101,6 +109,19 @@ public class BattleRequestManager {
     public void battleRequestRejected(BattleRequest battleRequest) {
         executingRequests.remove(battleRequest);
         pendingRequests.add(battleRequest);
+        notifyListeners(battleRequest, Event.EXECUTION_REJECTED);
+    }
+
+    public List<BattleRequest> getPendingRequests() {
+        return pendingRequests;
+    }
+
+    public void addListener(BattleRequestManagerListener listener) {
+        listeners.add(listener);
+    }
+
+    public void battleRequestStateUpdated(BattleRequest battleRequest) {
+        notifyListeners(battleRequest, Event.STATE_UPDATED);
     }
 
     public class State {
@@ -114,6 +135,34 @@ public class BattleRequestManager {
             this.executingRequests = executingRequests;
             this.executedRequests = executedRequests;
         }
+    }
+
+    private void notifyListeners(BattleRequest battleRequest, Event event) {
+        for (BattleRequestManagerListener listener : listeners) {
+            switch (event) {
+                case SUBMITTED:
+                    listener.battleRequestSubmitted(battleRequest);
+                    break;
+                case EXECUTION_REJECTED:
+                    listener.battleRequestExecutionRejected(battleRequest);
+                    break;
+                case EXECUTED:
+                    listener.battleRequestExecuted(battleRequest);
+                    break;
+                case STATE_UPDATED:
+                    listener.battleRequestStateUpdated(battleRequest);
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unsupported event: " + event);
+            }
+        }
+    }
+
+    private enum Event {
+        SUBMITTED,
+        EXECUTION_REJECTED,
+        EXECUTED,
+        STATE_UPDATED
     }
 
 }

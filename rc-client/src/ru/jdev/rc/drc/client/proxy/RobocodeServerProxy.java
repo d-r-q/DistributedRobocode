@@ -117,9 +117,13 @@ public class RobocodeServerProxy implements Runnable {
 
         if (enqueuedRequests.size() > 0) {
             for (int i = enqueuedRequests.size() - 1; i >= 0; i--) {
-                final BattleRequest request = enqueuedRequests.get(i);
-                System.out.printf("Cancel battle requests %d\n", request.remoteId);
-                serverPort.cancelRequest(request.remoteId);
+                try {
+                    final BattleRequest request = enqueuedRequests.get(i);
+                    System.out.printf("Cancel battle request %d\n", request.remoteId);
+                    serverPort.cancelRequest(request.remoteId);
+                } catch (Throwable t) {
+                    t.printStackTrace();
+                }
             }
         }
 
@@ -157,6 +161,8 @@ public class RobocodeServerProxy implements Runnable {
         request.state.setMessage("Sended");
         request.state.setState(State.RECEIVED);
 
+        battleRequestManager.battleRequestSubmitted(request);
+
         notifyListeners();
     }
 
@@ -177,6 +183,7 @@ public class RobocodeServerProxy implements Runnable {
 
             if (prevState == null || !prevState.getMessage().equals(state.getMessage())) {
                 updated = true;
+                battleRequestManager.battleRequestStateUpdated(request);
             }
         }
 
