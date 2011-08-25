@@ -45,10 +45,6 @@ public class BattleRequestManager {
             final BattleRequest request = pendingRequests.remove(0);
             executingRequests.add(request);
             return request;
-        } else if (executingRequests.size() > 0) {
-            final BattleRequest battleRequest = executingRequests.remove(0);
-            executingRequests.add(battleRequest);
-            return battleRequest;
         }
 
         return null;
@@ -68,6 +64,10 @@ public class BattleRequestManager {
 
     public boolean hasNotExecutedRequests() {
         return pendingRequests.size() > 0 || executingRequests.size() > 0;
+    }
+
+    public boolean hasPendingRequests() {
+        return pendingRequests.size() > 0;
     }
 
     public int getExecutedBattleRequests() {
@@ -95,11 +95,11 @@ public class BattleRequestManager {
             totalScore += br.battleResults.getCompetitorResults().get(0).getScore() + br.battleResults.getCompetitorResults().get(1).getScore();
         }
 
-        return ((double)challengerScore) / totalScore * 100;
+        return ((double) challengerScore) / totalScore * 100;
     }
 
     public void battleRequestRejected(BattleRequest battleRequest) {
-        executedRequests.remove(battleRequest);
+        executingRequests.remove(battleRequest);
         pendingRequests.add(battleRequest);
     }
 

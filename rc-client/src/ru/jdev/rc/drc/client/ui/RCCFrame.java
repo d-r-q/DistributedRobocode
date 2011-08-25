@@ -16,6 +16,8 @@ import ru.jdev.rc.drc.server.CompetitorResults;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.util.Arrays;
@@ -73,6 +75,9 @@ public class RCCFrame extends JFrame implements WindowListener {
             proxy.addListener(serverPanel);
             serversPanel.add(serverPanel);
         }
+        final JButton add = new JButton("Add server");
+        add.addActionListener(new AddServerButtonListener());
+        serversPanel.add(add);
 
         challengeResults.setLayout(new BoxLayout(challengeResults, BoxLayout.Y_AXIS));
         final DefaultTableModel tableModel = new DefaultTableModel(new Object[][]{}, new Object[]{"Reference", "Challenger APS", "Challenger score", "Challenger bullet damage", "Refernce score", "Refernce bullet damage"});
@@ -123,6 +128,19 @@ public class RCCFrame extends JFrame implements WindowListener {
 
     @Override
     public void windowDeactivated(WindowEvent e) {
+    }
+
+    private class AddServerButtonListener implements ActionListener {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            new JFileChooser().showDialog(RCCFrame.this, "Choose");
+            /*final ServerPanel serverPanel = new ServerPanel(new RobocodeServerProxy("", "", null, null, null));
+            serverPanel.init();
+            serversPanel.add(serverPanel, serversPanel.getComponentCount() - 1);
+            serversPanel.validate();
+            serversPanel.repaint();*/
+            //new AddServerDialog().setVisible(true);
+        }
     }
 
     private class StateUpdater implements Runnable {

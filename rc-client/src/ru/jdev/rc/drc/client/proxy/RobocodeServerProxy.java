@@ -20,6 +20,7 @@ import java.util.concurrent.ExecutorService;
 public class RobocodeServerProxy implements Runnable {
 
     private final Set<ProxyListener> listeners = new HashSet<>();
+    private final List<BattleRequest> enqueuedRequests = new ArrayList<>();
 
     private final String authToken;
     private final String url;
@@ -28,10 +29,9 @@ public class RobocodeServerProxy implements Runnable {
     private final BattleRequestManager battleRequestManager;
 
     private RobocodeServer serverPort;
-    private Integer currentBattleRequestId = null;
     private String stateMessage;
     private boolean connected;
-    private BattleRequest currentRequest;
+    private volatile boolean runned;
 
     public RobocodeServerProxy(String authToken, String url, Set<Bot> bots, ExecutorService executorService,
                                BattleRequestManager battleRequestManager) {
@@ -42,7 +42,10 @@ public class RobocodeServerProxy implements Runnable {
         this.battleRequestManager = battleRequestManager;
     }
 
-    public void connect() {
+    public synchronized void connect() {
+        if (runned) {
+            return;
+        }
         executorService.submit(this);
     }
 
@@ -64,6 +67,7 @@ public class RobocodeServerProxy implements Runnable {
 
     @Override
     public void run() {
+        runned = true;
         try {
             stateMessage = String.format("Connecting to %s\n", url);
             notifyListeners();
@@ -76,32 +80,53 @@ public class RobocodeServerProxy implements Runnable {
             stateMessage = "Connected";
             notifyListeners();
 
-            BattleRequest battleRequest;
-            while ((battleRequest = battleRequestManager.getBattleRequest()) != null) {
-                enqueueBattle(battleRequest);
+            while (!Thread.currentThread().isInterrupted() && (battleRequestManager.hasPendingRequests() || enqueuedRequests.size() > 0)) {
+                while (enqueuedRequests.size() < 2 && battleRequestManager.hasPendingRequests()) {
+                    final BattleRequest battleRequest = battleRequestManager.getBattleRequest();
+                    if (battleRequest != null) {
+                        enqueueBattle(battleRequest);
+                    }
+                }
 
                 while (true) {
                     try {
                         Thread.sleep(1000);
                     } catch (InterruptedException e) {
-                        e.printStackTrace();
-                        return;
-                    }
-                    checkRequestState();
-                    if (battleRequest.state.getState() == State.EXECUTED) {
-                        battleRequestManager.battleRequestExecuted(battleRequest);
-                        currentBattleRequestId = null;
+                        System.out.println("Proxy interrupted");
+                        // reset interrupted status
+                        Thread.currentThread().interrupt();
                         break;
-                    } else if (battleRequest.state.getState() == State.REJECTED) {
-                        battleRequestManager.battleRequestRejected(battleRequest);
-                        currentBattleRequestId = null;
+                    }
+                    checkRequestsState();
+                    final BattleRequest currentRequest = getCurrentRequest();
+                    if (currentRequest.state.getState() == State.EXECUTED) {
+                        battleRequestManager.battleRequestExecuted(currentRequest);
+                        enqueuedRequests.remove(0);
+                        break;
+                    } else if (currentRequest.state.getState() == State.REJECTED) {
+                        battleRequestManager.battleRequestRejected(currentRequest);
+                        enqueuedRequests.remove(0);
                         break;
                     }
                 }
             }
         } catch (Throwable t) {
             t.printStackTrace();
-            stateMessage = String.format("Server is unavailable");
+            stateMessage = "Server is unavailable";
+        }
+
+        if (enqueuedRequests.size() > 0) {
+            for (int i = enqueuedRequests.size() - 1; i >= 0; i--) {
+                final BattleRequest request = enqueuedRequests.get(i);
+                System.out.printf("Cancel battle requests %d\n", request.remoteId);
+                serverPort.cancelRequest(request.remoteId);
+            }
+        }
+
+        connected = false;
+        runned = false;
+        if (!Thread.currentThread().isInterrupted()) {
+            notifyListeners();
         }
     }
 
@@ -124,36 +149,38 @@ public class RobocodeServerProxy implements Runnable {
     }
 
     private void enqueueBattle(BattleRequest request) {
-        if (currentBattleRequestId != null) {
-            throw new IllegalStateException("Current battle execution in process");
-        }
+        request.remoteId = serverPort.executeBattle(request.competitors, request.bfSpec, request.rounds, authToken);
+        enqueuedRequests.add(request);
 
-        currentBattleRequestId = serverPort.executeBattle(request.competitors, request.bfSpec, request.rounds, authToken);
-
-        currentRequest = request;
-        currentRequest.currentRound = -1;
-        currentRequest.remoteId = currentBattleRequestId;
-        currentRequest.state = new BattleRequestState();
-        currentRequest.state.setMessage("Sended");
-        currentRequest.state.setState(State.RECEIVED);
+        request.currentRound = -1;
+        request.state = new BattleRequestState();
+        request.state.setMessage("Sended");
+        request.state.setState(State.RECEIVED);
 
         notifyListeners();
     }
 
-    private void checkRequestState() {
-        final BattleRequestState prevState = currentRequest.state;
-        final BattleRequestState state = serverPort.getState(currentBattleRequestId);
-        currentRequest.state = state;
-        if (state.getState() == State.EXECUTED) {
-            currentRequest.battleResults = serverPort.getBattleResults(currentBattleRequestId);
-        } else if (state.getMessage().startsWith("Round")) {
-            if (currentRequest.currentRound == -1) {
-                currentRequest.requestStartExecutingTime = System.currentTimeMillis();
+    private void checkRequestsState() {
+        boolean updated = false;
+        for (BattleRequest request : enqueuedRequests) {
+            final BattleRequestState prevState = request.state;
+            final BattleRequestState state = serverPort.getState(request.remoteId);
+            request.state = state;
+            if (state.getState() == State.EXECUTED) {
+                request.battleResults = serverPort.getBattleResults(request.remoteId);
+            } else if (state.getMessage().startsWith("Round")) {
+                if (request.currentRound == -1) {
+                    request.requestStartExecutingTime = System.currentTimeMillis();
+                }
+                request.currentRound = Integer.parseInt(state.getMessage().split(" ")[1]);
             }
-            currentRequest.currentRound = Integer.parseInt(state.getMessage().split(" ")[1]);
+
+            if (prevState == null || !prevState.getMessage().equals(state.getMessage())) {
+                updated = true;
+            }
         }
 
-        if (!prevState.getMessage().equals(state.getMessage())) {
+        if (updated) {
             notifyListeners();
         }
     }
@@ -165,6 +192,10 @@ public class RobocodeServerProxy implements Runnable {
     }
 
     public BattleRequest getCurrentRequest() {
-        return currentRequest;
+        if (enqueuedRequests.size() == 0) {
+            return null;
+        }
+
+        return enqueuedRequests.get(0);
     }
 }

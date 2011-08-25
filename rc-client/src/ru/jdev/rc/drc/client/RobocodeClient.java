@@ -14,6 +14,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * User: jdev
@@ -93,13 +94,19 @@ public class RobocodeClient {
     public static void main(String[] args) throws IOException {
         boolean runUI = false;
         final List<String> argsList = new ArrayList<>(Arrays.asList(args));
-        for (Iterator<String> argsIter = argsList.iterator(); argsIter.hasNext();) {
+        for (Iterator<String> argsIter = argsList.iterator(); argsIter.hasNext(); ) {
             if (argsIter.next().equals("-ui")) {
                 runUI = true;
                 argsIter.remove();
             }
         }
         final ExecutorService executorService = Executors.newCachedThreadPool();
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            @Override
+            public void run() {
+                shutdownExecutor(executorService);
+            }
+        });
         final Challenge challenge = parseChallenge(argsList.get(0), argsList.get(1), new BotsFactory());
         final BattleRequestManager battleRequestManager = new BattleRequestManager(challenge, Integer.parseInt(argsList.get(2)));
         final RobocodeClient client = new RobocodeClient(battleRequestManager, new ProxyList(executorService, challenge.getAllBots(), battleRequestManager));
@@ -109,7 +116,16 @@ public class RobocodeClient {
         client.run();
 
         if (!runUI) {
-            executorService.shutdownNow();
+            shutdownExecutor(executorService);
+        }
+    }
+
+    private static void shutdownExecutor(ExecutorService executorService) {
+        executorService.shutdownNow();
+        try {
+            executorService.awaitTermination(100, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
 
