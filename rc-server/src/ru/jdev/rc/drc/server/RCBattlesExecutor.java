@@ -82,26 +82,12 @@ public class RCBattlesExecutor implements IBattleListener {
     }
 
     private RobotSpecification[] getRobotSpecs(Competitor[] competitors) {
-        final RobotSpecification[] specs = new RobotSpecification[competitors.length];
-
-        int specsIdx = 0;
-        final RobotSpecification[] localRepository = robocodeEngine.getLocalRepository();
-        for (Competitor competitor : competitors) {
-            boolean hasSpec = false;
-            for (RobotSpecification spec : localRepository) {
-                if (spec.getNameAndVersion().equals(competitor.name + "* " + competitor.version) ||
-                        spec.getNameAndVersion().equals(competitor.name + " " + competitor.version)) {
-                    specs[specsIdx++] = spec;
-                    hasSpec = true;
-                }
-            }
-
-            if (!hasSpec) {
-                System.out.printf("Cannot find spec for %s %s\n", competitor.name, competitor.version);
-            }
+        final StringBuilder specs = new StringBuilder();
+        for (Competitor competitor :competitors) {
+            specs.append(competitor.name).append(' ').append(competitor.version).append(',');
         }
-
-        return specs;
+        specs.deleteCharAt(specs.length() - 1);
+        return robocodeEngine.getLocalRepository(specs.toString());
     }
 
     public synchronized boolean cancelIfStarted(Integer battleRequestId) {
