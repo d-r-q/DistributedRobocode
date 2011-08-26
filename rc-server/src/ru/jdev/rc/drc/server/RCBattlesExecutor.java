@@ -21,7 +21,6 @@ public class RCBattlesExecutor implements IBattleListener {
     private BattleRequest currentBattleRequest;
 
     private long finishTime;
-    private volatile boolean isBattleStarted = false;
 
     public RCBattlesExecutor() {
         this.robocodeEngine = new RobocodeEngine(new File(".\\rc\\"));
@@ -47,15 +46,6 @@ public class RCBattlesExecutor implements IBattleListener {
         currentBattleRequest.state.setMessage("Starting battle");
         robocodeEngine.runBattle(battleSpecification);
         System.out.printf("Executing battle %s vs %s\n", robotSpecs[0].getNameAndVersion(), robotSpecs[1].getNameAndVersion());
-
-        while (!isBattleStarted) {
-            try {
-                wait();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-                break;
-            }
-        }
 
         return true;
     }
@@ -83,7 +73,7 @@ public class RCBattlesExecutor implements IBattleListener {
 
     private RobotSpecification[] getRobotSpecs(Competitor[] competitors) {
         final StringBuilder specs = new StringBuilder();
-        for (Competitor competitor :competitors) {
+        for (Competitor competitor : competitors) {
             specs.append(competitor.name).append(' ').append(competitor.version).append(',');
         }
         specs.deleteCharAt(specs.length() - 1);
@@ -102,7 +92,6 @@ public class RCBattlesExecutor implements IBattleListener {
 
     public void onBattleFinished(BattleFinishedEvent battleFinishedEvent) {
         System.out.println("Battle finished");
-        isBattleStarted = false;
     }
 
     public void onBattleCompleted(BattleCompletedEvent battleCompletedEvent) {
@@ -112,12 +101,6 @@ public class RCBattlesExecutor implements IBattleListener {
     public void onRoundStarted(RoundStartedEvent roundStartedEvent) {
         currentBattleRequest.state.setState(BattleRequestState.State.EXECUTING);
         currentBattleRequest.state.setMessage("Round: " + roundStartedEvent.getRound());
-        if (roundStartedEvent.getRound() == 0) {
-            synchronized (this) {
-                isBattleStarted = true;
-                notifyAll();
-            }
-        }
     }
 
     public void onBattleStarted(BattleStartedEvent battleStartedEvent) {
