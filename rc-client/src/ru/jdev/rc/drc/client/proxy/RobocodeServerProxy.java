@@ -132,6 +132,7 @@ public class RobocodeServerProxy implements Runnable {
         if (!Thread.currentThread().isInterrupted()) {
             notifyListeners();
         }
+        System.out.println("Proxy handling thread finished");
     }
 
     private void loadCompetitors() {

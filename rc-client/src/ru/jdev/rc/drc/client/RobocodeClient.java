@@ -7,6 +7,7 @@ package ru.jdev.rc.drc.client;
 import ru.jdev.rc.drc.client.proxy.ProxyList;
 import ru.jdev.rc.drc.client.ui.RCCFrame;
 
+import javax.swing.*;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -111,6 +112,12 @@ public class RobocodeClient {
         final BattleRequestManager battleRequestManager = new BattleRequestManager(challenge, Integer.parseInt(argsList.get(2)));
         final RobocodeClient client = new RobocodeClient(battleRequestManager, new ProxyList(executorService, challenge.getAllBots(), battleRequestManager));
         if (runUI) {
+            try {
+                UIManager.setLookAndFeel("javax.swing.plaf.nimbus.NimbusLookAndFeel");
+            } catch (ClassNotFoundException | UnsupportedLookAndFeelException | IllegalAccessException | InstantiationException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
             new RCCFrame(client.battleRequestManager, client.proxyList, client, executorService, challenge).init();
         }
         client.run();

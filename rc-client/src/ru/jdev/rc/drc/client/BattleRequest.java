@@ -4,10 +4,7 @@
 
 package ru.jdev.rc.drc.client;
 
-import ru.jdev.rc.drc.server.BattleRequestState;
-import ru.jdev.rc.drc.server.BfSpec;
-import ru.jdev.rc.drc.server.Competitor;
-import ru.jdev.rc.drc.server.RsBattleResults;
+import ru.jdev.rc.drc.server.*;
 
 import java.util.List;
 
@@ -32,6 +29,68 @@ public class BattleRequest {
         this.competitors = competitors;
         this.bfSpec = bfSpec;
         this.rounds = rounds;
+    }
+
+    public double getChallengerAPS() {
+        final CompetitorResults cr = battleResults.getCompetitorResults().get(0);
+        final CompetitorResults rr = battleResults.getCompetitorResults().get(1);
+
+        if (cr == null || rr == null) {
+            return Double.NaN;
+        }
+
+        return ((double) cr.getScore() / (double) (cr.getScore() + rr.getScore())) * 100;
+    }
+
+    public int getChallengerScore() {
+        final CompetitorResults cr = battleResults.getCompetitorResults().get(0);
+
+        if (cr == null) {
+            return -1;
+        }
+
+        return cr.getScore();
+    }
+
+    public int getChallengerBulletDamage() {
+        final CompetitorResults cr = battleResults.getCompetitorResults().get(0);
+
+        if (cr == null) {
+            return -1;
+        }
+
+        return cr.getBulletDamage();
+    }
+
+    public int getReferenceScore() {
+        final CompetitorResults cr = battleResults.getCompetitorResults().get(1);
+
+        if (cr == null) {
+            return -1;
+        }
+
+        return cr.getScore();
+    }
+
+    public int getReferenceBulletDamage() {
+        final CompetitorResults cr = battleResults.getCompetitorResults().get(1);
+
+        if (cr == null) {
+            return -1;
+        }
+
+        return cr.getBulletDamage();
+    }
+
+    public int getTotalScore() {
+        final CompetitorResults cr = battleResults.getCompetitorResults().get(0);
+        final CompetitorResults rr = battleResults.getCompetitorResults().get(1);
+
+        if (cr == null || rr == null) {
+            return -1;
+        }
+
+        return cr.getScore() + rr.getScore();
     }
 
     @Override

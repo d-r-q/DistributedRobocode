@@ -4,7 +4,6 @@
 
 package ru.jdev.rc.drc.client;
 
-import ru.jdev.rc.drc.client.ui.QueuePanel;
 import ru.jdev.rc.drc.server.BfSpec;
 
 import java.util.ArrayList;
@@ -90,17 +89,13 @@ public class BattleRequestManager {
         return totalRequests;
     }
 
-    public synchronized State getState() {
-        return new State(new ArrayList<>(pendingRequests), new ArrayList<>(executingRequests), new ArrayList<>(executedRequests));
-    }
-
     public double getAps() {
         int totalScore = 0;
         int challengerScore = 0;
 
         for (BattleRequest br : executedRequests) {
-            challengerScore += br.battleResults.getCompetitorResults().get(0).getScore();
-            totalScore += br.battleResults.getCompetitorResults().get(0).getScore() + br.battleResults.getCompetitorResults().get(1).getScore();
+            challengerScore += br.getChallengerScore();
+            totalScore += br.getTotalScore();
         }
 
         return ((double) challengerScore) / totalScore * 100;
@@ -122,19 +117,6 @@ public class BattleRequestManager {
 
     public void battleRequestStateUpdated(BattleRequest battleRequest) {
         notifyListeners(battleRequest, Event.STATE_UPDATED);
-    }
-
-    public class State {
-
-        public List<BattleRequest> pendingRequests;
-        public List<BattleRequest> executingRequests;
-        public List<BattleRequest> executedRequests;
-
-        public State(List<BattleRequest> pendingRequests, List<BattleRequest> executingRequests, List<BattleRequest> executedRequests) {
-            this.pendingRequests = pendingRequests;
-            this.executingRequests = executingRequests;
-            this.executedRequests = executedRequests;
-        }
     }
 
     private void notifyListeners(BattleRequest battleRequest, Event event) {
