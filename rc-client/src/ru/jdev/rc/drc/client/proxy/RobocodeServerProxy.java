@@ -43,6 +43,7 @@ public class RobocodeServerProxy implements Runnable {
     }
 
     public synchronized void connect() {
+        enqueuedRequests.clear();
         if (runned) {
             return;
         }
@@ -121,6 +122,7 @@ public class RobocodeServerProxy implements Runnable {
                     final BattleRequest request = enqueuedRequests.get(i);
                     System.out.printf("Cancel battle request %d\n", request.remoteId);
                     serverPort.cancelRequest(request.remoteId);
+                    battleRequestManager.battleRequestRejected(request);
                 } catch (Throwable t) {
                     t.printStackTrace();
                 }

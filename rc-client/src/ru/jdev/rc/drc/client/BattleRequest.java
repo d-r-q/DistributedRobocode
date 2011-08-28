@@ -14,6 +14,8 @@ import java.util.List;
  */
 public class BattleRequest {
 
+    private static final int MAX_SCORE = 6300;
+
     public final List<Competitor> competitors;
     public final BfSpec bfSpec;
     public final int rounds;
@@ -91,6 +93,25 @@ public class BattleRequest {
         }
 
         return cr.getScore() + rr.getScore();
+    }
+
+    public double getChallengerScoreGainRate() {
+        final CompetitorResults cr = battleResults.getCompetitorResults().get(0);
+
+        if (cr == null) {
+            return Double.NaN;
+        }
+
+        return ((double) cr.getScore() / (MAX_SCORE)) * 100;
+    }
+
+    public double getChallengerEnergyConserved() {
+        final CompetitorResults rr = battleResults.getCompetitorResults().get(1);
+
+        if (rr == null) {
+            return Double.NaN;
+        }
+        return 100 - ((double)rr.getBulletDamage() / rounds);
     }
 
     @Override

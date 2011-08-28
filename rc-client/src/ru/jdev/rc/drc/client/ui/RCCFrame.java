@@ -62,6 +62,8 @@ public class RCCFrame extends JFrame implements BattleRequestManagerListener {
         resultsTable = new JTable(new BattleRequestsTableModel(new BattleRequestsTableModel.BattleRequestColumn[]
                 {BattleRequestsTableModel.BattleRequestColumn.referenceBotName,
                         BattleRequestsTableModel.BattleRequestColumn.challengerAps,
+                        BattleRequestsTableModel.BattleRequestColumn.challengerScoreGainRate,
+                        BattleRequestsTableModel.BattleRequestColumn.challengerEnergyConserved,
                         BattleRequestsTableModel.BattleRequestColumn.challengerScore,
                         BattleRequestsTableModel.BattleRequestColumn.challengerBulletDamage,
                         BattleRequestsTableModel.BattleRequestColumn.referenceScore,
