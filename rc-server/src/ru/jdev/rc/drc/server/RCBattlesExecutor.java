@@ -45,7 +45,7 @@ public class RCBattlesExecutor implements IBattleListener {
         currentBattleRequest.state.setState(BattleRequestState.State.EXECUTING);
         currentBattleRequest.state.setMessage("Starting battle");
         robocodeEngine.runBattle(battleSpecification);
-        System.out.printf("Executing battle %s vs %s\n", robotSpecs[0].getNameAndVersion(), robotSpecs[1].getNameAndVersion());
+        System.out.printf("Executing battle %s vs %s (%d)\n", robotSpecs[0].getNameAndVersion(), robotSpecs[1].getNameAndVersion(),  + System.currentTimeMillis());
 
         return true;
     }

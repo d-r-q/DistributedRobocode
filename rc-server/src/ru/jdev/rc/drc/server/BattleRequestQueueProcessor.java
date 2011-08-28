@@ -27,6 +27,7 @@ public class BattleRequestQueueProcessor implements Runnable {
         while (isRunned && !Thread.interrupted()) {
             final BattleRequest request;
             try {
+                System.out.println("Request next battle " + System.currentTimeMillis());
                 request = battleRequestsQueue.getBattleRequest(100);
             } catch (InterruptedException e) {
                 isRunned = false;
@@ -35,6 +36,7 @@ public class BattleRequestQueueProcessor implements Runnable {
             if (request == null) {
                 continue;
             }
+            System.out.println("Battle fetched " + System.currentTimeMillis());
 
             try {
                 if (!request.isCompetitorsLoaded) {
@@ -49,7 +51,9 @@ public class BattleRequestQueueProcessor implements Runnable {
                     request.state.setState(BattleRequestState.State.EXECUTED);
                     request.state.setMessage("");
                 }
+                System.out.println("Storing battle results");
                 battleResultsBuffer.addBattleResult(request.getRequestId(), rsBattleResults);
+                System.out.println("Battle results stored " + System.currentTimeMillis());
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -64,17 +68,23 @@ public class BattleRequestQueueProcessor implements Runnable {
     }
 
     private void loadCompetitors(BattleRequest request) {
+        System.out.println("Load competitors...");
         request.state.setState(BattleRequestState.State.EXECUTING);
+        request.isCompetitorsLoaded = true;
         for (Competitor competitor : request.competitors) {
             try {
                 codeManager.loadCompetitor(competitor);
             } catch (IOException e) {
                 request.state.setState(BattleRequestState.State.REJECTED);
                 request.state.setMessage(e.getMessage());
+                request.isCompetitorsLoaded = false;
             }
         }
+        System.out.println("Loaded");
 
+        System.out.println("Reloading robots database...");
         codeManager.reloadRobotsDataBase();
+        System.out.println("Reloaded");
     }
 
     public void stop() {

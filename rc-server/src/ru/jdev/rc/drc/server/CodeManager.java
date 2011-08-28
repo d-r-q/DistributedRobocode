@@ -87,5 +87,7 @@ public class CodeManager {
         for (File robotFile : robotsDirectory.listFiles(new JarFilter())) {
             robotFile.delete();
         }
+
+        Utils.deleteDir(new File(robotsDirectory.getAbsoluteFile() + File.separator + ".data"));
     }
 }

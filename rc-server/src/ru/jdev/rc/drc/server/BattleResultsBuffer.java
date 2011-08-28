@@ -19,7 +19,7 @@ public class BattleResultsBuffer {
         this.battleResults.put(battleRequestId, battleResults);
     }
 
-    public RSBattleResults getResults(Integer battleRequestId) {
+    public synchronized RSBattleResults getResults(Integer battleRequestId) {
         return battleResults.get(battleRequestId);
     }
 
