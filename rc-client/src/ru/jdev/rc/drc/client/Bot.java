@@ -75,4 +75,8 @@ public class Bot {
         result = 31 * result + (botVersion != null ? botVersion.hashCode() : 0);
         return result;
     }
+
+    public String getNameAndVersion() {
+        return botName + " " + botVersion;
+    }
 }

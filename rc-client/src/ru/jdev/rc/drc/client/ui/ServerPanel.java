@@ -37,9 +37,9 @@ public class ServerPanel extends JPanel implements ProxyListener, ActionListener
         reconnect.setEnabled(false);
         reconnect.addActionListener(this);
 
-        this.setPreferredSize(new Dimension(270, getPreferredSize().height));
-        this.setMinimumSize(new Dimension(270, getPreferredSize().height));
-        this.setMaximumSize(new Dimension(270, getPreferredSize().height));
+        this.setPreferredSize(new Dimension(220, getPreferredSize().height));
+        this.setMinimumSize(new Dimension(220, getPreferredSize().height));
+        this.setMaximumSize(new Dimension(220, getPreferredSize().height));
     }
 
     public void proxyStateUpdate() {

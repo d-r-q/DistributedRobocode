@@ -28,4 +28,8 @@ public class BotsGroup {
     public List<Bot> getBots() {
         return bots;
     }
+
+    public String getName() {
+        return name;
+    }
 }

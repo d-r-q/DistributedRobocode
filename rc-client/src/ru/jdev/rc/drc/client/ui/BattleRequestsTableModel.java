@@ -71,7 +71,7 @@ public class BattleRequestsTableModel extends DefaultTableModel {
             dataVector.remove(battleRequest);
         }
         final TableModelEvent e = new TableModelEvent(this, idx);
-        fireTableChanged(e);
+        fireTableDataChanged();
     }
 
     public static class BattleRequestColumn {
@@ -79,8 +79,8 @@ public class BattleRequestsTableModel extends DefaultTableModel {
         public static final BattleRequestColumn referenceBotName = new BattleRequestColumn("Reference Bot", SourceField.REFERENCE_BOT_NAME);
         public static final BattleRequestColumn requestState = new BattleRequestColumn("Request State", SourceField.REQUEST_STATE);
         public static final BattleRequestColumn challengerAps = new BattleRequestColumn("Challenger APS", SourceField.CHALLENGER_APS);
-        public static final BattleRequestColumn challengerScoreGainRate= new BattleRequestColumn("Challenger Score Gain Rate", SourceField.CHALLENGER_SCORE_GAIN_RATE);
-        public static final BattleRequestColumn challengerEnergyConserved= new BattleRequestColumn("Challenger Energy Conserved", SourceField.CHALLENGER_ENERGY_CONSERVED);
+        public static final BattleRequestColumn challengerScoreGainRate = new BattleRequestColumn("Challenger Score Gain Rate", SourceField.CHALLENGER_SCORE_GAIN_RATE);
+        public static final BattleRequestColumn challengerEnergyConserved = new BattleRequestColumn("Challenger Energy Conserved", SourceField.CHALLENGER_ENERGY_CONSERVED);
         public static final BattleRequestColumn challengerScore = new BattleRequestColumn("Challenger Score", SourceField.CHALLENGER_SCORE);
         public static final BattleRequestColumn challengerBulletDamage = new BattleRequestColumn("Challenger Bullet Damage", SourceField.CHALLENGER_BULLET_DAMAGE);
         public static final BattleRequestColumn referenceScore = new BattleRequestColumn("Reference Score", SourceField.REFERENCE_SCORE);

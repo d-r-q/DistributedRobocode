@@ -19,6 +19,8 @@ public class BattleRequest {
     public final List<Competitor> competitors;
     public final BfSpec bfSpec;
     public final int rounds;
+    public final String groupName;
+    public final String botAlias;
 
     public int localId;
     public int remoteId;
@@ -27,10 +29,12 @@ public class BattleRequest {
     public long requestStartExecutingTime;
     public int currentRound;
 
-    public BattleRequest(List<Competitor> competitors, BfSpec bfSpec, int rounds) {
+    public BattleRequest(List<Competitor> competitors, BfSpec bfSpec, int rounds, String groupName, String botAlias) {
         this.competitors = competitors;
         this.bfSpec = bfSpec;
         this.rounds = rounds;
+        this.groupName = groupName;
+        this.botAlias = botAlias;
     }
 
     public double getChallengerAPS() {
@@ -111,11 +115,19 @@ public class BattleRequest {
         if (rr == null) {
             return Double.NaN;
         }
-        return 100 - ((double)rr.getBulletDamage() / rounds);
+        return 100 - ((double) rr.getBulletDamage() / rounds);
     }
 
     @Override
     public String toString() {
         return String.valueOf(localId);
+    }
+
+    public String getChallengerNameAndVersion() {
+        return competitors.get(0).getName() + " " + competitors.get(0).getVersion();
+    }
+
+    public String getReferenceNameAndVersion() {
+        return competitors.get(1).getName() + " " + competitors.get(1).getVersion();
     }
 }

@@ -4,6 +4,10 @@
 
 package ru.jdev.rc.drc.client;
 
+import ru.jdev.rc.drc.client.scoring.ScoreTreeLeaf;
+import ru.jdev.rc.drc.client.scoring.ScoreTreeNode;
+import ru.jdev.rc.drc.client.scoring.ScoringTree;
+
 import java.io.IOException;
 import java.io.LineNumberReader;
 import java.io.Reader;
@@ -27,6 +31,7 @@ public class Challenge {
     private String scoringType;
     private int rounds;
     private int seasons;
+    private ScoringTree scoringTree;
 
     public int getRounds() {
         return rounds;
@@ -56,6 +61,22 @@ public class Challenge {
         return allBots;
     }
 
+    public ScoringTree getScoringTree() {
+        return scoringTree;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setSeasons(int seasons) {
+        this.seasons = seasons;
+    }
+
+    public int getSeasons() {
+        return seasons;
+    }
+
     // original code from RoboResearch (http://robowiki.net/wiki/RoboResearch)
     public static Challenge load(Reader inStream, BotsFactory botsFactory) throws IOException {
 
@@ -72,6 +93,8 @@ public class Challenge {
         c.rounds = Integer.parseInt(in.readLine().split(" ")[0]);
 
         String line;
+        final ScoreTreeNode total = new ScoreTreeNode("Total");
+        c.scoringTree = new ScoringTree(total);
         while (true) {
 
             // read the next line, looking for a category name
@@ -94,6 +117,8 @@ public class Challenge {
             }
 
             final BotsGroup group = new BotsGroup(category);
+            final ScoreTreeNode groupNode = new ScoreTreeNode(category);
+            total.addChild(groupNode);
             // fill the category with each challenger
             while (true) {
 
@@ -122,6 +147,7 @@ public class Challenge {
                     bot.setAlias(tokens[1]);
                 }
                 group.addBot(bot);
+                groupNode.addChild(new ScoreTreeLeaf(bot.getAlias() != null ? bot.getAlias() : bot.getNameAndVersion()));
             }
             c.addGroup(group);
         }

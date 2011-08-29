@@ -24,16 +24,17 @@ public class BattleRequestManager {
 
     private int totalRequests;
 
-    public BattleRequestManager(Challenge challenge, int seasons) {
+    public BattleRequestManager(Challenge challenge) {
         final BfSpec battlefieldSpecification = new BfSpec();
         battlefieldSpecification.setBfWidth(800);
         battlefieldSpecification.setBfHeight(600);
 
         int idSeq = 0;
-        for (int i = 0; i < seasons; i++) {
+        for (int i = 0; i < challenge.getSeasons(); i++) {
             for (BotsGroup botsGroup : challenge.getBotGroups()) {
                 for (Bot bot : botsGroup.getBots()) {
-                    final BattleRequest battleRequest = new BattleRequest(Arrays.asList(challenge.getChallenger().getCompetitor(), bot.getCompetitor()), battlefieldSpecification, challenge.getRounds());
+                    final BattleRequest battleRequest = new BattleRequest(Arrays.asList(challenge.getChallenger().getCompetitor(), bot.getCompetitor()), battlefieldSpecification, challenge.getRounds(),
+                            botsGroup.getName(), bot.getAlias());
                     battleRequest.localId = idSeq++;
                     pendingRequests.add(battleRequest);
                 }

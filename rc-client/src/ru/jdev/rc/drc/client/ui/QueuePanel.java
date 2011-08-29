@@ -6,8 +6,10 @@ package ru.jdev.rc.drc.client.ui;
 
 import ru.jdev.rc.drc.client.BattleRequest;
 import ru.jdev.rc.drc.client.BattleRequestManagerListener;
+import ru.jdev.rc.drc.client.util.Utils;
 
 import javax.swing.*;
+import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.util.List;
 
@@ -19,6 +21,7 @@ public class QueuePanel extends JPanel implements BattleRequestManagerListener {
 
     private final JTable enqueuedRequests;
     private final JTable pendingRequests;
+    private JScrollPane pendingRequestsScroll;
 
     public QueuePanel(List<BattleRequest> pendingRequests) {
         setBorder(BorderFactory.createLineBorder(Color.BLACK));
@@ -31,7 +34,7 @@ public class QueuePanel extends JPanel implements BattleRequestManagerListener {
         enqueuedRequests.setShowGrid(true);
 
         JScrollPane enqueuedRequestsScroll = new JScrollPane(enqueuedRequests);
-        enqueuedRequestsScroll.setBorder(BorderFactory.createTitledBorder(enqueuedRequestsScroll.getBorder(), "Enqueued requests"));
+        Utils.addTitle(enqueuedRequestsScroll, "Enqueued requests");
         enqueuedRequestsScroll.setMinimumSize(new Dimension(Integer.MAX_VALUE, 150));
         enqueuedRequestsScroll.setMaximumSize(new Dimension(Integer.MAX_VALUE, 150));
 
@@ -41,8 +44,8 @@ public class QueuePanel extends JPanel implements BattleRequestManagerListener {
                 new BattleRequestsTableModel.BattleRequestColumn[]{BattleRequestsTableModel.BattleRequestColumn.referenceBotName}, pendingRequests));
         this.pendingRequests.setShowGrid(true);
 
-        JScrollPane pendingRequestsScroll = new JScrollPane(this.pendingRequests);
-        pendingRequestsScroll.setBorder(BorderFactory.createTitledBorder(pendingRequestsScroll.getBorder(), "Pending requests"));
+        pendingRequestsScroll = new JScrollPane(this.pendingRequests);
+        Utils.addTitle(pendingRequestsScroll, "Pending requests (" + pendingRequests.size() + ")");
         pendingRequestsScroll.setPreferredSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
         pendingRequestsScroll.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
 
@@ -53,6 +56,10 @@ public class QueuePanel extends JPanel implements BattleRequestManagerListener {
     public void battleRequestSubmitted(BattleRequest battleRequest) {
         ((BattleRequestsTableModel) enqueuedRequests.getModel()).addBattleRequest(battleRequest);
         ((BattleRequestsTableModel) pendingRequests.getModel()).removeBattleRequest(battleRequest);
+        final TitledBorder border = (TitledBorder) pendingRequestsScroll.getBorder();
+        border.setTitle(String.format("Pending requests (%d)", pendingRequests.getModel().getRowCount()));
+        validate();
+        repaint();
     }
 
     @Override

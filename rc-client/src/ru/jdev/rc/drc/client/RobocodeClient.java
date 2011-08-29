@@ -76,7 +76,7 @@ public class RobocodeClient {
         return battleRequestManager.getRemainingBattleRequests() * millisPerBattle;
     }
 
-    private static Challenge parseChallenge(String challenger, String file, BotsFactory botsFactory) throws IOException {
+    private static Challenge parseChallenge(String challenger, String file, int seasons, BotsFactory botsFactory) throws IOException {
         final BufferedReader reader = new BufferedReader(new FileReader(CHALLENGES_DIR + file));
         reader.mark(256);
         final String firstLine = reader.readLine();
@@ -87,6 +87,7 @@ public class RobocodeClient {
             // handle RoboResearch challenge
             reader.reset();
             final Challenge challenge = Challenge.load(reader, botsFactory);
+            challenge.setSeasons(seasons);
             challenge.setChallenger(botsFactory.getBot(challenger.split(" ")[0], challenger.split(" ")[1]));
             return challenge;
         }
@@ -108,8 +109,8 @@ public class RobocodeClient {
                 shutdownExecutor(executorService);
             }
         });
-        final Challenge challenge = parseChallenge(argsList.get(0), argsList.get(1), new BotsFactory());
-        final BattleRequestManager battleRequestManager = new BattleRequestManager(challenge, Integer.parseInt(argsList.get(2)));
+        final Challenge challenge = parseChallenge(argsList.get(0), argsList.get(1), Integer.parseInt(argsList.get(2)), new BotsFactory());
+        final BattleRequestManager battleRequestManager = new BattleRequestManager(challenge);
         final RobocodeClient client = new RobocodeClient(battleRequestManager, new ProxyList(executorService, challenge.getAllBots(), battleRequestManager));
         if (runUI) {
             try {

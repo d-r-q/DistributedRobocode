@@ -7,33 +7,41 @@ package ru.jdev.rc.drc.client.ui;
 import ru.jdev.rc.drc.client.*;
 import ru.jdev.rc.drc.client.proxy.ProxyList;
 import ru.jdev.rc.drc.client.proxy.RobocodeServerProxy;
+import ru.jdev.rc.drc.client.scoring.AbstractScoreTreeNode;
+import ru.jdev.rc.drc.client.scoring.ScoreTreeLeaf;
+import ru.jdev.rc.drc.client.util.Utils;
 
 import javax.swing.*;
+import javax.swing.border.TitledBorder;
+import javax.swing.table.AbstractTableModel;
 import java.awt.*;
-import java.util.Date;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 
 public class RCCFrame extends JFrame implements BattleRequestManagerListener {
 
     private final BattleRequestManager battleRequestManager;
     private final ProxyList proxyList;
-    private final RobocodeClient robocodeClient;
     private final ExecutorService executorService;
     private final Challenge challenge;
 
     private final JPanel challengeResults = new JPanel();
     private final JPanel serversPanel = new JPanel();
-    private final JPanel infoPanel = new JPanel();
+    private final InfoPanel infoPanel;
 
     private JTable resultsTable;
     private QueuePanel queuePanel;
+    private List<AbstractScoreTreeNode> flatNodes;
+    private JTable scoresTable;
+    private JScrollPane resultsTableScrollPane;
 
     public RCCFrame(BattleRequestManager battleRequestManager, ProxyList proxyList, RobocodeClient robocodeClient, ExecutorService executorService, Challenge challenge) throws HeadlessException {
         this.battleRequestManager = battleRequestManager;
         this.proxyList = proxyList;
-        this.robocodeClient = robocodeClient;
         this.executorService = executorService;
         this.challenge = challenge;
+        this.infoPanel = new InfoPanel(challenge, robocodeClient);
+        flatNodes = challenge.getScoringTree().getFlat();
     }
 
     public void init() {
@@ -44,11 +52,11 @@ public class RCCFrame extends JFrame implements BattleRequestManagerListener {
 
         setLayout(new BorderLayout());
         queuePanel = new QueuePanel(battleRequestManager.getPendingRequests());
-        queuePanel.setPreferredSize(new Dimension(370, Integer.MAX_VALUE));
+        queuePanel.setPreferredSize(new Dimension(270, Integer.MAX_VALUE));
         getContentPane().add(queuePanel, BorderLayout.WEST);
         getContentPane().add(challengeResults, BorderLayout.CENTER);
         getContentPane().add(serversPanel, BorderLayout.EAST);
-        serversPanel.setPreferredSize(new Dimension(270, 1000));
+        serversPanel.setPreferredSize(new Dimension(220, 1000));
         serversPanel.setLayout(new BoxLayout(serversPanel, BoxLayout.Y_AXIS));
 
         for (RobocodeServerProxy proxy : proxyList.getAvailableProxies()) {
@@ -69,15 +77,34 @@ public class RCCFrame extends JFrame implements BattleRequestManagerListener {
                         BattleRequestsTableModel.BattleRequestColumn.referenceScore,
                         BattleRequestsTableModel.BattleRequestColumn.referenceBulletDamage}));
         resultsTable.setShowGrid(true);
-        final JScrollPane resultsTableScrollPane = new JScrollPane(resultsTable);
-        infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
-        infoPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 100));
-        infoPanel.setPreferredSize(new Dimension(Integer.MAX_VALUE, 100));
-        infoPanel.setMinimumSize(new Dimension(Integer.MAX_VALUE, 100));
-        infoPanel.setBorder(BorderFactory.createTitledBorder("Info"));
-        challengeResults.add(infoPanel, BorderLayout.NORTH);
+        resultsTableScrollPane = new JScrollPane(resultsTable);
+        Utils.addTitle(resultsTableScrollPane, "Battle results");
+
+        scoresTable = new JTable(new ScoreTableModel(challenge));
+        scoresTable.setShowGrid(true);
+        final JScrollPane scoresScrollPane = new JScrollPane(scoresTable);
+        Utils.addTitle(scoresScrollPane, "Scores");
+        scoresTable.validate();
+        scoresScrollPane.setPreferredSize(new Dimension(Integer.MAX_VALUE, 85));
+        scoresScrollPane.setMaximumSize(new Dimension(Integer.MAX_VALUE, 85));
+
+        infoPanel.init();
+        infoPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 65));
+        infoPanel.setPreferredSize(new Dimension(Integer.MAX_VALUE, 65));
+        infoPanel.setMinimumSize(new Dimension(Integer.MAX_VALUE, 65));
+        challengeResults.add(infoPanel);
+        challengeResults.add(scoresScrollPane);
+
+        final JPanel copyScoresButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        copyScoresButtons.setMaximumSize(new Dimension(Integer.MAX_VALUE, 35));
+        copyScoresButtons.setPreferredSize(new Dimension(Integer.MAX_VALUE, 35));
+        copyScoresButtons.add(new JButton("Copy HTML"));
+        copyScoresButtons.add(new JButton("Copy Wiki"));
+        challengeResults.add(copyScoresButtons);
+
         resultsTableScrollPane.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
-        challengeResults.add(resultsTableScrollPane, BorderLayout.CENTER);
+        challengeResults.add(resultsTableScrollPane);
+
 
         executorService.submit(new StateUpdater());
 
@@ -99,6 +126,21 @@ public class RCCFrame extends JFrame implements BattleRequestManagerListener {
     public void battleRequestExecuted(BattleRequest battleRequest) {
         queuePanel.battleRequestExecuted(battleRequest);
         ((BattleRequestsTableModel) resultsTable.getModel()).addBattleRequest(battleRequest);
+        getLeaf(battleRequest).addBattleRequest(battleRequest);
+        ((AbstractTableModel) scoresTable.getModel()).fireTableDataChanged();
+        ((TitledBorder) resultsTableScrollPane.getBorder()).setTitle(String.format("Battle results (%d, %3.2f%%)", resultsTable.getModel().getRowCount(), (double) battleRequestManager.getExecutedBattleRequests() / battleRequestManager.getTotalRequests()));
+        resultsTableScrollPane.repaint();
+    }
+
+    private ScoreTreeLeaf getLeaf(BattleRequest request) {
+        for (AbstractScoreTreeNode node : flatNodes) {
+            if (node instanceof ScoreTreeLeaf &&
+                    (node.getName().equals(request.botAlias) ||
+                            node.getName().equals(request.getReferenceNameAndVersion()))) {
+                return (ScoreTreeLeaf) node;
+            }
+        }
+        return null;
     }
 
     @Override
@@ -112,21 +154,9 @@ public class RCCFrame extends JFrame implements BattleRequestManagerListener {
         public void run() {
             while (true) {
                 try {
-                    infoPanel.removeAll();
-
-                    infoPanel.add(new JLabel("Challenger: " + challenge.getChallenger().getBotName() + " " + challenge.getChallenger().getBotVersion()));
-                    infoPanel.add(new JLabel(String.format("APS: %3.2f", battleRequestManager.getAps())));
-                    if (robocodeClient.getFinishTime() == -1) {
-                        infoPanel.add(new JLabel("Elapsed time: " + RobocodeClient.executionTimeDateFormat.format(new Date(System.currentTimeMillis() - robocodeClient.getStartTime()))));
-                    } else {
-                        infoPanel.add(new JLabel("Execution time: " + RobocodeClient.executionTimeDateFormat.format(new Date(robocodeClient.getFinishTime() - robocodeClient.getStartTime()))));
-                    }
-                    infoPanel.add(new JLabel("Estimated remaining time: " + RobocodeClient.executionTimeDateFormat.format(new Date(robocodeClient.getEstimatedRemainingTime()))));
-
-                    infoPanel.validate();
-                    infoPanel.repaint();
+                    infoPanel.update();
                     try {
-                        Thread.sleep(500);
+                        Thread.sleep(1000);
                     } catch (InterruptedException e) {
                         break;
                     }
