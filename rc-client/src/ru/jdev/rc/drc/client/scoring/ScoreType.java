@@ -9,7 +9,8 @@ import ru.jdev.rc.drc.client.BattleRequest;
 public enum ScoreType {
 
     AVERAGED_PERCENTS_SCORE("APS"),
-    SCORE_GAIN_RATE("SGR");
+    SCORE_GAIN_RATE("SGR"),
+    CHALLENGER_BULLET_DAMAGE("Chr blt dmg");
 
     private final String scoreName;
 
@@ -23,6 +24,8 @@ public enum ScoreType {
                 return request.getChallengerAPS();
             case SCORE_GAIN_RATE:
                 return request.getChallengerScoreGainRate();
+            case CHALLENGER_BULLET_DAMAGE:
+                return request.getChallengerBulletDamage() / request.rounds;
             default:
                 throw new IllegalArgumentException("Unsupported scoring type: " + this);
         }

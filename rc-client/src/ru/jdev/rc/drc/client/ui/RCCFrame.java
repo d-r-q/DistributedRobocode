@@ -85,8 +85,8 @@ public class RCCFrame extends JFrame implements BattleRequestManagerListener {
         final JScrollPane scoresScrollPane = new JScrollPane(scoresTable);
         Utils.addTitle(scoresScrollPane, "Scores");
         scoresTable.validate();
-        scoresScrollPane.setPreferredSize(new Dimension(Integer.MAX_VALUE, 85));
-        scoresScrollPane.setMaximumSize(new Dimension(Integer.MAX_VALUE, 85));
+        scoresScrollPane.setPreferredSize(new Dimension(Integer.MAX_VALUE, 105));
+        scoresScrollPane.setMaximumSize(new Dimension(Integer.MAX_VALUE, 105));
 
         infoPanel.init();
         infoPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 65));
@@ -98,8 +98,9 @@ public class RCCFrame extends JFrame implements BattleRequestManagerListener {
         final JPanel copyScoresButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         copyScoresButtons.setMaximumSize(new Dimension(Integer.MAX_VALUE, 35));
         copyScoresButtons.setPreferredSize(new Dimension(Integer.MAX_VALUE, 35));
-        copyScoresButtons.add(new JButton("Copy HTML"));
-        copyScoresButtons.add(new JButton("Copy Wiki"));
+        final JButton copyWiki = new JButton("Copy APS Wiki");
+        copyWiki.addActionListener(new CopyWikiActionListener(challenge));
+        copyScoresButtons.add(copyWiki);
         challengeResults.add(copyScoresButtons);
 
         resultsTableScrollPane.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
