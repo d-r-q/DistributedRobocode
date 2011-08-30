@@ -27,7 +27,6 @@ public class BattleRequestQueueProcessor implements Runnable {
         while (isRunned && !Thread.interrupted()) {
             final BattleRequest request;
             try {
-                System.out.println("Request next battle " + System.currentTimeMillis());
                 request = battleRequestsQueue.getBattleRequest(100);
             } catch (InterruptedException e) {
                 isRunned = false;
