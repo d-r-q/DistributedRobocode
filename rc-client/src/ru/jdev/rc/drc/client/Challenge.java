@@ -77,6 +77,10 @@ public class Challenge {
         return seasons;
     }
 
+    public String getScoringType() {
+        return scoringType;
+    }
+
     // original code from RoboResearch (http://robowiki.net/wiki/RoboResearch)
     public static Challenge load(Reader inStream, BotsFactory botsFactory) throws IOException {
 
@@ -147,7 +151,7 @@ public class Challenge {
                     bot.setAlias(tokens[1]);
                 }
                 group.addBot(bot);
-                groupNode.addChild(new ScoreTreeLeaf(bot.getAlias() != null ? bot.getAlias() : bot.getNameAndVersion()));
+                groupNode.addChild(new ScoreTreeLeaf(bot.getAlias() != null ? bot.getAlias() : bot.getNameAndVersion(), groupNode));
             }
             c.addGroup(group);
         }

@@ -38,6 +38,11 @@ public class BattleRequest {
     }
 
     public double getChallengerAPS() {
+        // todo(zhidkov): workaround for strange bug, fix it
+        if (battleResults == null || battleResults.getCompetitorResults() == null ||
+                battleResults.getCompetitorResults().size() < 2) {
+            return Double.NaN;
+        }
         final CompetitorResults cr = battleResults.getCompetitorResults().get(0);
         final CompetitorResults rr = battleResults.getCompetitorResults().get(1);
 
@@ -49,6 +54,11 @@ public class BattleRequest {
     }
 
     public int getChallengerScore() {
+        // todo(zhidkov): workaround for strange bug, fix it
+        if (battleResults == null || battleResults.getCompetitorResults() == null ||
+                battleResults.getCompetitorResults().size() < 2) {
+            return 0;
+        }
         final CompetitorResults cr = battleResults.getCompetitorResults().get(0);
 
         if (cr == null) {
@@ -59,6 +69,11 @@ public class BattleRequest {
     }
 
     public int getChallengerBulletDamage() {
+        // todo(zhidkov): workaround for strange bug, fix it
+        if (battleResults == null || battleResults.getCompetitorResults() == null ||
+                battleResults.getCompetitorResults().size() < 2) {
+            return 0;
+        }
         final CompetitorResults cr = battleResults.getCompetitorResults().get(0);
 
         if (cr == null) {
@@ -69,6 +84,11 @@ public class BattleRequest {
     }
 
     public int getReferenceScore() {
+        // todo(zhidkov): workaround for strange bug, fix it
+        if (battleResults == null || battleResults.getCompetitorResults() == null ||
+                battleResults.getCompetitorResults().size() < 2) {
+            return 0;
+        }
         final CompetitorResults cr = battleResults.getCompetitorResults().get(1);
 
         if (cr == null) {
@@ -79,6 +99,11 @@ public class BattleRequest {
     }
 
     public int getReferenceBulletDamage() {
+        // todo(zhidkov): workaround for strange bug, fix it
+        if (battleResults == null || battleResults.getCompetitorResults() == null ||
+                battleResults.getCompetitorResults().size() < 2) {
+            return 0;
+        }
         final CompetitorResults cr = battleResults.getCompetitorResults().get(1);
 
         if (cr == null) {
@@ -89,6 +114,11 @@ public class BattleRequest {
     }
 
     public int getTotalScore() {
+        // todo(zhidkov): workaround for strange bug, fix it
+        if (battleResults == null || battleResults.getCompetitorResults() == null ||
+                battleResults.getCompetitorResults().size() < 2) {
+            return 0;
+        }
         final CompetitorResults cr = battleResults.getCompetitorResults().get(0);
         final CompetitorResults rr = battleResults.getCompetitorResults().get(1);
 
@@ -100,6 +130,11 @@ public class BattleRequest {
     }
 
     public double getChallengerScoreGainRate() {
+        // todo(zhidkov): workaround for strange bug, fix it
+        if (battleResults == null || battleResults.getCompetitorResults() == null ||
+                battleResults.getCompetitorResults().size() < 2) {
+            return Double.NaN;
+        }
         final CompetitorResults cr = battleResults.getCompetitorResults().get(0);
 
         if (cr == null) {
@@ -110,6 +145,11 @@ public class BattleRequest {
     }
 
     public double getChallengerEnergyConserved() {
+        // todo(zhidkov): workaround for strange bug, fix it
+        if (battleResults == null || battleResults.getCompetitorResults() == null ||
+                battleResults.getCompetitorResults().size() < 2) {
+            return Double.NaN;
+        }
         final CompetitorResults rr = battleResults.getCompetitorResults().get(1);
 
         if (rr == null) {

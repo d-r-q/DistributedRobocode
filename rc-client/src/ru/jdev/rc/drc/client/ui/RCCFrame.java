@@ -85,8 +85,8 @@ public class RCCFrame extends JFrame implements BattleRequestManagerListener {
         final JScrollPane scoresScrollPane = new JScrollPane(scoresTable);
         Utils.addTitle(scoresScrollPane, "Scores");
         scoresTable.validate();
-        scoresScrollPane.setPreferredSize(new Dimension(Integer.MAX_VALUE, 105));
-        scoresScrollPane.setMaximumSize(new Dimension(Integer.MAX_VALUE, 105));
+        scoresScrollPane.setPreferredSize(new Dimension(Integer.MAX_VALUE, 125));
+        scoresScrollPane.setMaximumSize(new Dimension(Integer.MAX_VALUE, 125));
 
         infoPanel.init();
         infoPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 65));
@@ -98,8 +98,9 @@ public class RCCFrame extends JFrame implements BattleRequestManagerListener {
         final JPanel copyScoresButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         copyScoresButtons.setMaximumSize(new Dimension(Integer.MAX_VALUE, 35));
         copyScoresButtons.setPreferredSize(new Dimension(Integer.MAX_VALUE, 35));
-        final JButton copyWiki = new JButton("Copy APS Wiki");
-        copyWiki.addActionListener(new CopyWikiActionListener(challenge));
+        final JButton copyWiki = new JButton("Copy Wiki results");
+        scoresTable.getSelectionModel().setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        copyWiki.addActionListener(new CopyWikiActionListener(challenge, scoresTable.getSelectionModel()));
         copyScoresButtons.add(copyWiki);
         challengeResults.add(copyScoresButtons);
 
@@ -129,7 +130,7 @@ public class RCCFrame extends JFrame implements BattleRequestManagerListener {
         ((BattleRequestsTableModel) resultsTable.getModel()).addBattleRequest(battleRequest);
         getLeaf(battleRequest).addBattleRequest(battleRequest);
         ((AbstractTableModel) scoresTable.getModel()).fireTableDataChanged();
-        ((TitledBorder) resultsTableScrollPane.getBorder()).setTitle(String.format("Battle results (%d, %3.2f%%)", resultsTable.getModel().getRowCount(), (double) battleRequestManager.getExecutedBattleRequests() / battleRequestManager.getTotalRequests()));
+        ((TitledBorder) resultsTableScrollPane.getBorder()).setTitle(String.format("Battle results (%d, %3.2f%%)", resultsTable.getModel().getRowCount(), (double) battleRequestManager.getExecutedBattleRequests() / battleRequestManager.getTotalRequests() * 100));
         resultsTableScrollPane.repaint();
     }
 

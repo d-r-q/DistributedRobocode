@@ -58,6 +58,10 @@ public class BattleRequestManager {
     }
 
     public synchronized void battleRequestExecuted(BattleRequest battleRequest) {
+        if (battleRequest.battleResults == null || battleRequest.battleResults.getCompetitorResults() == null) {
+            battleRequestRejected(battleRequest);
+            return;
+        }
         executedRequests.add(battleRequest);
         executingRequests.remove(battleRequest);
         notifyListeners(battleRequest, Event.EXECUTED);

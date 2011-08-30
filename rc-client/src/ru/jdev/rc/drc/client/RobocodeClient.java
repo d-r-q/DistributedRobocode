@@ -5,6 +5,8 @@
 package ru.jdev.rc.drc.client;
 
 import ru.jdev.rc.drc.client.proxy.ProxyList;
+import ru.jdev.rc.drc.client.scoring.ScoreType;
+import ru.jdev.rc.drc.client.ui.CopyWikiActionListener;
 import ru.jdev.rc.drc.client.ui.RCCFrame;
 
 import javax.swing.*;
@@ -30,14 +32,16 @@ public class RobocodeClient {
 
     private final BattleRequestManager battleRequestManager;
     private final ProxyList proxyList;
+    private final Challenge challenge;
 
     private long battlesExecutionStartTime = -1;
     private long startTime;
     private long finishTime = -1;
 
-    public RobocodeClient(BattleRequestManager battleRequestManager, ProxyList proxyList) throws IOException {
+    public RobocodeClient(BattleRequestManager battleRequestManager, ProxyList proxyList, Challenge challenge) throws IOException {
         this.battleRequestManager = battleRequestManager;
         this.proxyList = proxyList;
+        this.challenge = challenge;
 
         executionTimeDateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
     }
@@ -63,7 +67,7 @@ public class RobocodeClient {
         finishTime = System.currentTimeMillis();
 
         System.out.println("Challenge finished, execution time: " + executionTimeDateFormat.format(new Date(System.currentTimeMillis() - startTime)));
-        System.out.printf("APS: %3.2f\n", battleRequestManager.getAps());
+        System.out.println(CopyWikiActionListener.getWikiStr(challenge, ScoreType.valueOf(challenge.getScoringType())));
     }
 
     public long getEstimatedRemainingTime() {
@@ -111,7 +115,7 @@ public class RobocodeClient {
         });
         final Challenge challenge = parseChallenge(argsList.get(0), argsList.get(1), Integer.parseInt(argsList.get(2)), new BotsFactory());
         final BattleRequestManager battleRequestManager = new BattleRequestManager(challenge);
-        final RobocodeClient client = new RobocodeClient(battleRequestManager, new ProxyList(executorService, challenge.getAllBots(), battleRequestManager));
+        final RobocodeClient client = new RobocodeClient(battleRequestManager, new ProxyList(executorService, challenge.getAllBots(), battleRequestManager), challenge);
         if (runUI) {
             try {
                 UIManager.setLookAndFeel("javax.swing.plaf.nimbus.NimbusLookAndFeel");

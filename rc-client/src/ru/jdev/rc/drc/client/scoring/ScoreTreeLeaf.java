@@ -13,13 +13,19 @@ import java.util.List;
 public class ScoreTreeLeaf extends AbstractScoreTreeNode {
 
     private final List<BattleRequest> battleRequests = new ArrayList<>();
+    private final ScoreTreeNode parent;
 
-    public ScoreTreeLeaf(String name) {
+    public ScoreTreeLeaf(String name, ScoreTreeNode parent) {
         super(name);
+        this.parent = parent;
     }
 
     public void addBattleRequest(BattleRequest battleRequest) {
         battleRequests.add(battleRequest);
+    }
+
+    public ScoreTreeNode getParent() {
+        return parent;
     }
 
     @Override
