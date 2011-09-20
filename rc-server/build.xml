@@ -74,7 +74,7 @@
             <fileset dir="${robocode.dir}"/>
         </copy>
 
-        <echo file="${rc.server.build.dir}\rc-server.bat">"${project.java.home}\bin\java" -cp
+        <echo file="${rc.server.build.dir}\rc-server.bat">"${project.java.home}\bin\java" -Xmx512M -DRANDOMSEED=1 -cp
             "rc-server.jar;rc\libs\robocode.jar;rc\libs\robocode.core-1.7.3.0.jar;rc\libs\picocontainer-2.6.jar;rc\libs\robocode.repository-1.7.3.0.jar"
             ru.jdev.rc.drc.server.RobocodeServer localhost 19861 authToken
         </echo>
