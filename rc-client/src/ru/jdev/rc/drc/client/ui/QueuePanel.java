@@ -5,7 +5,6 @@
 package ru.jdev.rc.drc.client.ui;
 
 import ru.jdev.rc.drc.client.BattleRequest;
-import ru.jdev.rc.drc.client.BattleRequestManagerListener;
 import ru.jdev.rc.drc.client.util.Utils;
 
 import javax.swing.*;
@@ -17,7 +16,7 @@ import java.util.List;
  * User: jdev
  * Date: 25.08.11
  */
-public class QueuePanel extends JPanel implements BattleRequestManagerListener {
+public class QueuePanel extends JPanel {
 
     private final JTable enqueuedRequests;
     private final JTable pendingRequests;
@@ -52,7 +51,6 @@ public class QueuePanel extends JPanel implements BattleRequestManagerListener {
         add(pendingRequestsScroll);
     }
 
-    @Override
     public void battleRequestSubmitted(BattleRequest battleRequest) {
         ((BattleRequestsTableModel) enqueuedRequests.getModel()).addBattleRequest(battleRequest);
         ((BattleRequestsTableModel) pendingRequests.getModel()).removeBattleRequest(battleRequest);
@@ -62,18 +60,15 @@ public class QueuePanel extends JPanel implements BattleRequestManagerListener {
         repaint();
     }
 
-    @Override
     public void battleRequestExecutionRejected(BattleRequest battleRequest) {
         ((BattleRequestsTableModel) enqueuedRequests.getModel()).removeBattleRequest(battleRequest);
         ((BattleRequestsTableModel) pendingRequests.getModel()).addBattleRequest(battleRequest);
     }
 
-    @Override
     public void battleRequestExecuted(BattleRequest battleRequest) {
         ((BattleRequestsTableModel) enqueuedRequests.getModel()).removeBattleRequest(battleRequest);
     }
 
-    @Override
     public void battleRequestStateUpdated(BattleRequest battleRequest) {
         ((BattleRequestsTableModel) enqueuedRequests.getModel()).battleRequestStateUpdated(battleRequest);
     }

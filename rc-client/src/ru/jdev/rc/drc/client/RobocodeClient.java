@@ -5,6 +5,8 @@
 package ru.jdev.rc.drc.client;
 
 import ru.jdev.rc.drc.client.proxy.ProxyList;
+import ru.jdev.rc.drc.client.scoring.AbstractScoreTreeNode;
+import ru.jdev.rc.drc.client.scoring.ScoreTreeLeaf;
 import ru.jdev.rc.drc.client.scoring.ScoreType;
 import ru.jdev.rc.drc.client.ui.CopyWikiActionListener;
 import ru.jdev.rc.drc.client.ui.RCCFrame;
@@ -23,7 +25,7 @@ import java.util.concurrent.TimeUnit;
  * User: jdev
  * Date: 13.08.11
  */
-public class RobocodeClient {
+public class RobocodeClient implements BattleRequestManagerListener {
 
     public static final SimpleDateFormat executionTimeDateFormat = new SimpleDateFormat("HH:mm:ss");
 
@@ -124,11 +126,15 @@ public class RobocodeClient {
                 throw new RuntimeException(e);
             }
             new RCCFrame(client.battleRequestManager, client.proxyList, client, executorService, challenge).init();
+        } else {
+            battleRequestManager.addListener(client);
         }
         client.run();
 
         if (!runUI) {
             shutdownExecutor(executorService);
+        } else {
+            JOptionPane.showMessageDialog(null, "Ready", "Ready", JOptionPane.INFORMATION_MESSAGE);
         }
     }
 
@@ -148,4 +154,30 @@ public class RobocodeClient {
     public long getFinishTime() {
         return finishTime;
     }
+
+    @Override
+    public void battleRequestExecuted(BattleRequest battleRequest) {
+        getLeaf(battleRequest).addBattleRequest(battleRequest);
+    }
+
+    private ScoreTreeLeaf getLeaf(BattleRequest request) {
+        for (AbstractScoreTreeNode node : challenge.getScoringTree().getFlat()) {
+            if (node instanceof ScoreTreeLeaf &&
+                    (node.getName().equals(request.botAlias) ||
+                            node.getName().equals(request.getReferenceNameAndVersion()))) {
+                return (ScoreTreeLeaf) node;
+            }
+        }
+        return null;
+    }
+
+    public void battleRequestStateUpdated(BattleRequest battleRequest) {
+    }
+
+    public void battleRequestSubmitted(BattleRequest battleRequest) {
+    }
+
+    public void battleRequestExecutionRejected(BattleRequest battleRequest) {
+    }
+
 }

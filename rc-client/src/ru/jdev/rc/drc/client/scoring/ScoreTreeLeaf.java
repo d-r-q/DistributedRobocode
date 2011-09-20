@@ -38,4 +38,8 @@ public class ScoreTreeLeaf extends AbstractScoreTreeNode {
 
         return avgScore.getCurrentValue();
     }
+
+    public List<BattleRequest> getBattleRequests() {
+        return battleRequests;
+    }
 }
