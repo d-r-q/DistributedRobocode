@@ -9,6 +9,7 @@ import ru.jdev.rc.drc.client.BattleRequestManager;
 import ru.jdev.rc.drc.client.Bot;
 import ru.jdev.rc.drc.server.*;
 
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
@@ -69,19 +70,13 @@ public class RobocodeServerProxy implements Runnable {
     @Override
     public void run() {
         runned = true;
-        try {
-            stateMessage = String.format("Connecting to %s\n", url);
-            notifyListeners();
-            RobocodeServerService robocodeServerService = new RobocodeServerService(new URL(url));
-            serverPort = robocodeServerService.getRobocodeServerPort();
-            connected = true;
-            stateMessage = "Loading competitors";
-            notifyListeners();
-            loadCompetitors();
-            stateMessage = "Connected";
-            notifyListeners();
-
-            while (!Thread.currentThread().isInterrupted() && (battleRequestManager.hasPendingRequests() || enqueuedRequests.size() > 0)) {
+        while (!Thread.currentThread().isInterrupted() && (battleRequestManager.hasPendingRequests() || enqueuedRequests.size() > 0)) {
+            try {
+                if (!connected) {
+                    if (!createConnection()) {
+                        continue;
+                    }
+                }
                 while (enqueuedRequests.size() < 2 && battleRequestManager.hasPendingRequests()) {
                     final BattleRequest battleRequest = battleRequestManager.getBattleRequest();
                     if (battleRequest != null) {
@@ -110,31 +105,53 @@ public class RobocodeServerProxy implements Runnable {
                         break;
                     }
                 }
-            }
-        } catch (Throwable t) {
-            t.printStackTrace();
-            stateMessage = "Server is unavailable";
-        }
+            } catch (Throwable t) {
+                t.printStackTrace();
+                stateMessage = "Server is unavailable";
+                if (enqueuedRequests.size() > 0) {
+                    for (int i = enqueuedRequests.size() - 1; i >= 0; i--) {
+                        try {
+                            final BattleRequest request = enqueuedRequests.get(i);
+                            System.out.printf("Cancel battle request %d\n", request.remoteId);
+                            battleRequestManager.battleRequestRejected(request);
+                            serverPort.cancelRequest(request.remoteId);
+                        } catch (Throwable ignore) {
+                        }
+                    }
+                    enqueuedRequests.clear();
+                }
 
-        if (enqueuedRequests.size() > 0) {
-            for (int i = enqueuedRequests.size() - 1; i >= 0; i--) {
-                try {
-                    final BattleRequest request = enqueuedRequests.get(i);
-                    System.out.printf("Cancel battle request %d\n", request.remoteId);
-                    serverPort.cancelRequest(request.remoteId);
-                    battleRequestManager.battleRequestRejected(request);
-                } catch (Throwable t) {
-                    t.printStackTrace();
+                connected = false;
+                runned = false;
+                if (!Thread.currentThread().isInterrupted()) {
+                    notifyListeners();
                 }
             }
         }
 
-        connected = false;
-        runned = false;
-        if (!Thread.currentThread().isInterrupted()) {
-            notifyListeners();
-        }
         System.out.println("Proxy handling thread finished");
+    }
+
+    private boolean createConnection() throws MalformedURLException {
+        try {
+            stateMessage = String.format("Connecting to %s\n", url);
+            notifyListeners();
+            RobocodeServerService robocodeServerService = new RobocodeServerService(new URL(url));
+            serverPort = robocodeServerService.getRobocodeServerPort();
+            connected = true;
+            stateMessage = "Loading competitors";
+            notifyListeners();
+            loadCompetitors();
+            stateMessage = "Connected";
+            notifyListeners();
+            return true;
+        } catch (Throwable t) {
+            try {
+                Thread.sleep(10000);
+            } catch (InterruptedException ignore) {
+            }
+            return false;
+        }
     }
 
     private void loadCompetitors() {

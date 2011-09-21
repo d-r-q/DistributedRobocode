@@ -15,10 +15,12 @@ import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.AbstractTableModel;
 import java.awt.*;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 
-public class RCCFrame extends JFrame implements BattleRequestManagerListener {
+public class RCCFrame extends JFrame implements BattleRequestManagerListener, WindowListener {
 
     private final BattleRequestManager battleRequestManager;
     private final ProxyList proxyList;
@@ -45,6 +47,7 @@ public class RCCFrame extends JFrame implements BattleRequestManagerListener {
     }
 
     public void init() {
+        addWindowListener(this);
         battleRequestManager.addListener(this);
 
         setExtendedState(MAXIMIZED_BOTH);
@@ -149,6 +152,30 @@ public class RCCFrame extends JFrame implements BattleRequestManagerListener {
     public void battleRequestStateUpdated(BattleRequest battleRequest) {
         queuePanel.battleRequestStateUpdated(battleRequest);
     }
+
+    public void windowClosing(WindowEvent e) {
+        System.out.println("Shutdown executor service");
+        executorService.shutdownNow();
+    }
+
+    public void windowOpened(WindowEvent e) {
+    }
+
+    public void windowClosed(WindowEvent e) {
+    }
+
+    public void windowIconified(WindowEvent e) {
+    }
+
+    public void windowDeiconified(WindowEvent e) {
+    }
+
+    public void windowActivated(WindowEvent e) {
+    }
+
+    public void windowDeactivated(WindowEvent e) {
+    }
+
 
     private class StateUpdater implements Runnable {
 
