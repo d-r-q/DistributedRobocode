@@ -80,7 +80,7 @@ public class ScoreTableModel extends AbstractTableModel {
 
             return String.format("%3.2f", avg.getCurrentValue());
         } else {
-            return String.format("%3.2f", visibleScores.get(columnIndex - 1).getScore(ScoreType.values()[rowIndex]));
+            return String.format("%3.2f", visibleScores.get(columnIndex - 1).getAvgScore(ScoreType.values()[rowIndex]));
         }
     }
 }

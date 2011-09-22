@@ -52,10 +52,10 @@ public class CopyWikiActionListener implements ActionListener {
         for (AbstractScoreTreeNode node : challenge.getScoringTree().getFlat()) {
             if (node instanceof ScoreTreeLeaf) {
                 if (((ScoreTreeLeaf) node).getParent().getChildren().size() > 1) {
-                    wikiReults.append(String.format("%.2f ||", node.getScore(selectedScoreType)));
+                    wikiReults.append(String.format("%.2f ||", node.getAvgScore(selectedScoreType)));
                 }
             } else {
-                wikiReults.append(String.format("'''%.2f''' ||", node.getScore(selectedScoreType)));
+                wikiReults.append(String.format("'''%.2f (%.2f)''' ||", node.getAvgScore(selectedScoreType), node.getMedScore(selectedScoreType)));
             }
         }
 

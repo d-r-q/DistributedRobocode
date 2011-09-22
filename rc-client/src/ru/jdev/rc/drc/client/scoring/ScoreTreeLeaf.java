@@ -6,6 +6,7 @@ package ru.jdev.rc.drc.client.scoring;
 
 import ru.jdev.rc.drc.client.BattleRequest;
 import ru.jdev.rc.drc.client.util.AvgValue;
+import ru.jdev.rc.drc.client.util.Median;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,7 +30,7 @@ public class ScoreTreeLeaf extends AbstractScoreTreeNode {
     }
 
     @Override
-    public double getScore(ScoreType scoreType) {
+    public double getAvgScore(ScoreType scoreType) {
         final AvgValue avgScore = new AvgValue(battleRequests.size());
 
         for (BattleRequest request : battleRequests) {
@@ -37,6 +38,16 @@ public class ScoreTreeLeaf extends AbstractScoreTreeNode {
         }
 
         return avgScore.getCurrentValue();
+    }
+
+    public double getMedScore(ScoreType scoreType) {
+        final Median medScore = new Median(battleRequests.size());
+
+        for (BattleRequest request : battleRequests) {
+            medScore.addValue(scoreType.getScore(request));
+        }
+
+        return medScore.getMedian();
     }
 
     public List<BattleRequest> getBattleRequests() {

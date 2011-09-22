@@ -6,6 +6,8 @@ package ru.jdev.rc.drc.client.scoring;
 
 public interface Score {
 
-    double getScore(ScoreType scoreType);
+    double getAvgScore(ScoreType scoreType);
+
+    double getMedScore(ScoreType scoreType);
 
 }
