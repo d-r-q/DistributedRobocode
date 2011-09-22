@@ -158,6 +158,8 @@ public class RobocodeClient implements BattleRequestManagerListener {
     @Override
     public void battleRequestExecuted(BattleRequest battleRequest) {
         getLeaf(battleRequest).addBattleRequest(battleRequest);
+        System.out.println(CopyWikiActionListener.getWikiStr(challenge, ScoreType.valueOf(challenge.getScoringType())));
+        System.out.println("battles remaining: " + battleRequestManager.getRemainingBattleRequests());
     }
 
     private ScoreTreeLeaf getLeaf(BattleRequest request) {
