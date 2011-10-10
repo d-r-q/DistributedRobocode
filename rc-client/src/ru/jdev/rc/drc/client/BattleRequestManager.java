@@ -108,7 +108,7 @@ public class BattleRequestManager {
 
     public void battleRequestRejected(BattleRequest battleRequest) {
         executingRequests.remove(battleRequest);
-        pendingRequests.add(battleRequest);
+        pendingRequests.add(0, battleRequest);
         notifyListeners(battleRequest, Event.EXECUTION_REJECTED);
     }
 
