@@ -32,7 +32,16 @@ public class BattleRequestManager {
         int idSeq = 0;
         for (int i = 0; i < challenge.getSeasons(); i++) {
             for (BotsGroup botsGroup : challenge.getBotGroups()) {
-                for (Bot bot : botsGroup.getBots()) {
+                final List<Bot> bots = new ArrayList(botsGroup.getBots());
+                while (bots.size() > 0) {
+                    final Bot bot;
+                    if (bots.size() % 3 == 0) {
+                        bot = bots.remove(0);
+                    } else if (bots.size() % 3 == 1) {
+                        bot = bots.remove(bots.size() - 1);
+                    } else {
+                        bot = bots.remove(bots.size() / 2);
+                    }
                     final BattleRequest battleRequest = new BattleRequest(Arrays.asList(challenge.getChallenger().getCompetitor(), bot.getCompetitor()), battlefieldSpecification, challenge.getRounds(),
                             botsGroup.getName(), bot.getAlias());
                     battleRequest.localId = idSeq++;
