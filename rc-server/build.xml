@@ -1,9 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
-<!--
-  ~ Copyright (c) 2011 Zodiac Interactive, LLC. All Rights Reserved.
-  -->
-
 <project name="RobocodeServer" basedir="."
          default="compile-server">
     <property file="build.properties"/>
